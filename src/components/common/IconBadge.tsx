@@ -1,7 +1,8 @@
-import { ReactElement, cloneElement, isValidElement } from "react";
+import type { ReactElement } from "react";
+import { cloneElement, isValidElement } from "react";
 
 type Props = {
-  icon: ReactElement;
+  icon: ReactElement<{ size?: number; className?: string }>;
   bgClass?: string;
   size?: number;
   rounded?: string;
@@ -14,7 +15,7 @@ export default function IconBadge({ icon, bgClass = "bg-slate-300", size = 40, r
 
   return (
     <span className={`inline-flex items-center justify-center ${rounded} ${bgClass}`} style={{ width: size, height: size }}>
-      {isValidElement(icon)
+      {isValidElement<{ size?: number; className?: string }>(icon)
         ? cloneElement(icon, {
             size: innerSize,
             className: iconClassName ?? "text-white",

@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import type { ReactElement } from "react";
 
 type Props = {
   title: string;
@@ -22,13 +22,7 @@ export default function StatGradientCard({ title, value, sublabel, gradientFrom,
         <p className="text-2xl font-semibold">{value}</p>
         {sublabel ? <p className="text-xs/5 opacity-90 mt-1">{sublabel}</p> : null}
       </div>
-      {icon ? (
-        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-          {}
-          {}
-          {icon && (typeof icon === "object" ? { ...icon, props: { ...icon.props, color: "white" } } : icon)}
-        </div>
-      ) : null}
+      {icon ? <div className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center">{icon}</div> : null}
     </div>
   );
 }

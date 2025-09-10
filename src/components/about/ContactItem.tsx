@@ -1,10 +1,10 @@
 import IconBadge from "../common/IconBadge";
-import { ReactElement } from "react";
+import type { ReactElement } from "react";
 
 type Props = {
   label: string;
   value: string;
-  icon: ReactElement;
+  icon: ReactElement<{ size?: number; className?: string }>;
   kind?: "email" | "phone" | "address";
 };
 

@@ -1,10 +1,11 @@
-import React, { ReactNode, isValidElement, cloneElement } from "react";
+import type { ReactNode, ReactElement } from "react";
+import { isValidElement, cloneElement } from "react";
 
 type Props = {
   label: string;
   value: string | number;
   hint?: string;
-  icon?: ReactNode;
+  icon?: ReactNode | ReactElement<{ size?: number; className?: string }>;
   iconBgClass?: string;
 };
 
@@ -16,7 +17,7 @@ export default function StatCard({ label, value, hint, icon, iconBgClass }: Prop
 
         {icon ? (
           <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${iconBgClass ?? "bg-slate-300"}`}>
-            {isValidElement(icon)
+            {isValidElement<{ size?: number; className?: string }>(icon)
               ? cloneElement(icon, {
                   size: 20,
                   className: "text-white",
