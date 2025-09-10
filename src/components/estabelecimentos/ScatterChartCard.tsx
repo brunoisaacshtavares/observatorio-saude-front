@@ -21,7 +21,7 @@ export default function ScatterChartCard({ title, data }: Props) {
             <XAxis type="number" dataKey="populacao" name="População" tickFormatter={(v) => `${Math.round(v / 1_000_000)}M`} tickLine={false} axisLine={false} fontSize={12} />
             <YAxis type="number" dataKey="estabelecimentos" name="Estabelecimentos" tickLine={false} axisLine={false} fontSize={12} />
             <ZAxis type="number" dataKey="z" range={[6, 24]} />
-            <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v: any, name: any, props: any) => (name === "populacao" ? `${(v / 1_000_000).toFixed(2)}M` : v)} labelFormatter={() => ""} />
+            <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(v: any, name: any) => (name === "populacao" ? `${(v / 1_000_000).toFixed(2)}M` : v)} labelFormatter={() => ""} />
             <Scatter data={enriched} fill="#00A67D" />
           </ScatterChart>
         </ResponsiveContainer>
