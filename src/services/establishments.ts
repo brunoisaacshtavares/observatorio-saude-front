@@ -3,8 +3,6 @@ import type { Paginado, EstabelecimentoItem } from "../types/cnes";
 import { UF_METADATA } from "../utils/formatters";
 
 export async function getEstabelecimentos(page = 1, pageSize = 10) {
-  const fullUrl = `${process.env.VITE_API_URL}/api/v1/Estabelecimento?pageNumber=${page}&pageSize=${pageSize}`;
-  console.log('URL completa da requisição:', fullUrl);
   const { data } = await api.get<Paginado<EstabelecimentoItem>>(`/api/v1/Estabelecimento?pageNumber=${page}&pageSize=${pageSize}`);
   return data;
 }
