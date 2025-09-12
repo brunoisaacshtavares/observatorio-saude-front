@@ -8,13 +8,13 @@ import { Building2, UsersRound, Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatNumber, UF_METADATA } from "../utils/formatters";
 import { useQuery } from "@tanstack/react-query";
-import { getUFCountsByAmostra, getEstabelecimentos } from "../services/establishments";
+import { getTotalEstabelecimentos, getUFCounts } from "../services/establishments";
 import { useState as useReactState } from "react";
 
 function useUFData() {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["uf-counts-amostra"],
-    queryFn: () => getUFCountsByAmostra(600),
+    queryKey: ["uf-counts"],
+    queryFn: () => getUFCounts(),
   });
 
   const rows = useMemo(() => {
@@ -50,8 +50,8 @@ export default function Estabelecimentos() {
     isLoading: isLoadingTotal,
     isError: isErrorTotal,
   } = useQuery({
-    queryKey: ["estabelecimentos-total-nacional"],
-    queryFn: () => getEstabelecimentos(1, 1),
+    queryKey: ["contagem-total"],
+    queryFn: () => getTotalEstabelecimentos(),
   });
 
   const filtered = useMemo(() => {
@@ -235,7 +235,7 @@ export default function Estabelecimentos() {
 
       {}
       <section className="grid gap-4 md:grid-cols-3">
-        <StatGradientCard title="Total Nacional" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalResp?.totalCount ?? 0)} sublabel="Estabelecimentos" gradientFrom="#004F6D" gradientTo="#003A52" icon={<Building2 />} />
+        <StatGradientCard title="Total Nacional" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalResp?.totalEstabelecimentos ?? 0)} sublabel="Estabelecimentos" gradientFrom="#004F6D" gradientTo="#003A52" icon={<Building2 />} />
         <StatGradientCard title="Média Nacional" value={isLoading ? "…" : isError ? "Erro" : formatNumber(rows.length ? Math.round(totalNacional / rows.length) : 0)} sublabel="Por estado" gradientFrom="#00A67D" gradientTo="#008A67" icon={<UsersRound />} />
         <StatGradientCard title="Cobertura Média" value={isLoading ? "…" : isError ? "Erro" : rows.length ? (rows.reduce((acc, s) => acc + estabPor100k(s), 0) / rows.length).toFixed(1) : "0.0"} sublabel="Est./100k hab." gradientFrom="#FFD166" gradientTo="#E6BC5A" icon={<Filter />} />
       </section>

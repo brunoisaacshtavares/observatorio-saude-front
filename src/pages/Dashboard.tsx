@@ -2,19 +2,19 @@ import Header from "../components/layout/Header";
 import StatCard from "../components/cards/StatCard";
 import { Building2, Bed, TrendingUp, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getEstabelecimentos } from "../services/establishments";
 import { formatNumber } from "../utils/formatters";
 import EstablishmentsBarChart from "../components/charts/EstablishmentsBarChart";
 import MapPlaceHolder from "../components/map/MapPlaceHolder";
 import UpdatesList from "../components/news/UpdatesList";
+import { getTotalEstabelecimentos } from "../services/establishments";
 
 export default function Dashboard() {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["estabelecimentos-total"],
-    queryFn: () => getEstabelecimentos(1, 1),
+    queryKey: ["contagem-total"],
+    queryFn: () => getTotalEstabelecimentos(), 
   });
 
-  const totalEstabs = data?.totalCount ?? 0;
+const totalEstabs = data?.totalEstabelecimentos ?? 0;
 
   const updates = [
     {
