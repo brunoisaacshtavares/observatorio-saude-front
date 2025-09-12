@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTopUFByAmostra } from "../../services/establishments";
+import { getTopUF } from "../../services/establishments";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 function ufLabel(uf: number) {
@@ -37,13 +37,13 @@ function ufLabel(uf: number) {
 
 export default function EstablishmentsBarChart() {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["top-uf-amostra"],
-    queryFn: () => getTopUFByAmostra(300),
+    queryKey: ["top-uf"],
+    queryFn: () => getTopUF(),
   });
 
   return (
     <div className="card p-4 h-[360px]">
-      <h4 className="card-head mb-3">Estados com Maior Número de Estabelecimentos (amostra)</h4>
+      <h4 className="card-head mb-3">Estados com Maior Número de Estabelecimentos</h4>
       {isLoading ? (
         <p className="text-sm text-slate-500">Carregando…</p>
       ) : isError ? (
