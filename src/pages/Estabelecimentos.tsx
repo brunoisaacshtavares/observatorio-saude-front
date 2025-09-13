@@ -6,7 +6,7 @@ import StateTable from "../components/estabelecimentos/StateTable";
 import StatGradientCard from "../components/cards/StatGradientCard";
 import { Building2, UsersRound, Filter } from "lucide-react";
 import { useMemo, useState } from "react";
-import { formatNumber, UF_METADATA } from "../utils/formatters";
+import { formatNumber } from "../utils/formatters";
 import { useQuery } from "@tanstack/react-query";
 import { getTotalEstabelecimentos, getUFCounts } from "../services/establishments";
 import { useState as useReactState } from "react";
@@ -18,16 +18,15 @@ function useUFData() {
   });
 
   const rows = useMemo(() => {
-    if (!data) return [] as { uf: string; estado: string; regiao: string; estabelecimentos: number; populacao: number }[];
-    return data
-      .filter((d) => d.meta)
-      .map((d) => ({
-        uf: d.meta!.sigla,
-        estado: d.meta!.nome,
-        regiao: d.meta!.regiao,
-        estabelecimentos: d.qty,
-        populacao: d.meta!.populacao,
-      }));
+    if (!data) return [] as { uf: string; estado: string; regiao: string; estabelecimentos: number; populacao: number, estPor100k: number }[];
+    return data.map((d) => ({
+      uf: d.sigla,
+      estado: d.nome,
+      regiao: d.regiao,
+      estabelecimentos: d.qty,
+      populacao: d.populacao,
+      estPor100k: d.cobertura,
+    }));
   }, [data]);
 
   return { rows, isLoading, isError };
@@ -57,8 +56,8 @@ export default function Estabelecimentos() {
   const filtered = useMemo(() => {
     let base = [...rows];
     if (!q) return base;
-    const term = q.toLowerCase();
-    base = base.filter((s) => s.estado.toLowerCase().includes(term) || s.regiao.toLowerCase().includes(term) || s.uf.toLowerCase().includes(term));
+      const term = q.toLowerCase();
+      base = base.filter((s) => s.estado.toLowerCase().includes(term) || s.regiao.toLowerCase().includes(term) || s.uf.toLowerCase().includes(term));
     if (appliedRegiao) base = base.filter((s) => s.regiao === appliedRegiao);
     if (appliedUf) base = base.filter((s) => s.uf === appliedUf);
     return base;
@@ -71,17 +70,16 @@ export default function Estabelecimentos() {
   }, [selectedRegiao, selectedUf]);
 
   const ufOptions = useMemo(() => {
-    const all = rows.map((s) => s.uf);
-    const unique = [...new Set(all)].sort();
-    if (!draftRegiao) return unique;
-    return unique.filter((sigla) => {
-      const meta = Object.values(UF_METADATA).find((m) => m.sigla === sigla);
-      return meta?.regiao === draftRegiao;
-    });
+    let filteredRows = rows;
+
+    if (draftRegiao) {
+      filteredRows = rows.filter((s) => s.regiao === draftRegiao);
+    }
+    const ufs = filteredRows.map((s) => s.uf);
+    return [...new Set(ufs)].sort();
   }, [rows, draftRegiao]);
 
   const totalNacional = useMemo(() => rows.reduce((acc, s) => acc + s.estabelecimentos, 0), [rows]);
-  const estabPor100k = (s: (typeof rows)[number]) => s.estabelecimentos / (s.populacao / 100_000);
 
   return (
     <div className="space-y-4">
@@ -225,7 +223,7 @@ export default function Estabelecimentos() {
           <StateTable
             rows={filtered.map((s) => ({
               ...s,
-              estPor100k: s.estabelecimentos / (s.populacao / 100_000),
+              estPor100k: s.estPor100k,
             }))}
             onSelectUF={setEstadoSelecionado}
             selectedUF={estadoSelecionado}
@@ -237,7 +235,7 @@ export default function Estabelecimentos() {
       <section className="grid gap-4 md:grid-cols-3">
         <StatGradientCard title="Total Nacional" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalResp?.totalEstabelecimentos ?? 0)} sublabel="Estabelecimentos" gradientFrom="#004F6D" gradientTo="#003A52" icon={<Building2 />} />
         <StatGradientCard title="Média Nacional" value={isLoading ? "…" : isError ? "Erro" : formatNumber(rows.length ? Math.round(totalNacional / rows.length) : 0)} sublabel="Por estado" gradientFrom="#00A67D" gradientTo="#008A67" icon={<UsersRound />} />
-        <StatGradientCard title="Cobertura Média" value={isLoading ? "…" : isError ? "Erro" : rows.length ? (rows.reduce((acc, s) => acc + estabPor100k(s), 0) / rows.length).toFixed(1) : "0.0"} sublabel="Est./100k hab." gradientFrom="#FFD166" gradientTo="#E6BC5A" icon={<Filter />} />
+        <StatGradientCard title="Cobertura Média" value={isLoading ? "…" : isError ? "Erro" : rows.length ? (rows.reduce((acc, s) => acc + s.estPor100k, 0) / rows.length).toFixed(1) : "0.0"} sublabel="Est./100k hab." gradientFrom="#FFD166" gradientTo="#E6BC5A" icon={<Filter />} />
       </section>
     </div>
   );
