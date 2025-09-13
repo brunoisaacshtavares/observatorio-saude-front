@@ -1,6 +1,5 @@
 import { api } from "./api";
 import type { ContagemPorEstado, ContagemTotal, EstabelecimentoItem, Paginado } from "../types/cnes";
-import { UF_METADATA } from "../utils/formatters";
 
 export async function getTotalEstabelecimentosPorEstado() {
   const { data } = await api.get<ContagemPorEstado[]>('/api/v1/estabelecimento/uf');
@@ -23,7 +22,7 @@ export async function getTopUF() {
 
   return contagens
     .slice(0, 10)
-    .map(item => ({ uf: item.codUf, qty: item.total }));
+    .map(item => ({ uf: item.codUf, qty: item.totalEstabelecimentos }));
 }
 
 export async function getUFCounts() {
@@ -32,8 +31,12 @@ export async function getUFCounts() {
   return contagens
     .map(item => ({
       uf: item.codUf,
-      qty: item.total,
-      meta: UF_METADATA[item.codUf as keyof typeof UF_METADATA]
+      qty: item.totalEstabelecimentos,
+      sigla: item.siglaUf,
+      nome: item.nomeUf,
+      regiao: item.regiao,
+      populacao: item.populacao,
+      cobertura: item.coberturaEstabelecimentos
     }))
     .sort((a, b) => b.qty - a.qty);
 }
