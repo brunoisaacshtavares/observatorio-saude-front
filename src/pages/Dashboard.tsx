@@ -7,7 +7,7 @@ import { formatNumber } from "../utils/formatters";
 import EstablishmentsBarChart from "../components/charts/EstablishmentsBarChart";
 import MapPlaceHolder from "../components/map/MapPlaceHolder";
 import UpdatesList from "../components/news/UpdatesList";
-import { getTotalEstabelecimentos, getUFCounts } from "../services/establishments";
+import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
 
 export default function Dashboard() {
   const { 
@@ -15,8 +15,21 @@ export default function Dashboard() {
     isLoading: isLoadingUfs, 
     isError: isErrorUfs 
   } = useQuery({
-    queryKey: ["uf-counts"],
-    queryFn: () => getUFCounts(),
+    queryKey: ["estabelecimentos-por-estado"],
+    queryFn: () => getTotalEstabelecimentosPorEstado(),
+    select: (data) => {
+      return data
+        .map(item => ({
+          uf: item.codUf,
+          qty: item.totalEstabelecimentos,
+          sigla: item.siglaUf,
+          nome: item.nomeUf,
+          regiao: item.regiao,
+          populacao: item.populacao,
+          cobertura: item.coberturaEstabelecimentos
+        }))
+        .sort((a, b) => b.qty - a.qty);
+    },
   });
 
   const { 

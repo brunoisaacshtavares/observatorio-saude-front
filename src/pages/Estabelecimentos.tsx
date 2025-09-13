@@ -8,14 +8,27 @@ import { Building2, UsersRound, Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatNumber } from "../utils/formatters";
 import { useQuery } from "@tanstack/react-query";
-import { getTotalEstabelecimentos, getUFCounts } from "../services/establishments";
+import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
 import { useState as useReactState } from "react";
 
 function useUFData() {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["uf-counts"],
-    queryFn: () => getUFCounts(),
-  });
+    queryKey: ["estabelecimentos-por-estado"],
+        queryFn: () => getTotalEstabelecimentosPorEstado(),
+        select: (data) => {
+          return data
+            .map(item => ({
+              uf: item.codUf,
+              qty: item.totalEstabelecimentos,
+              sigla: item.siglaUf,
+              nome: item.nomeUf,
+              regiao: item.regiao,
+              populacao: item.populacao,
+              cobertura: item.coberturaEstabelecimentos
+            }))
+            .sort((a, b) => b.qty - a.qty);
+        },
+      });
 
   const rows = useMemo(() => {
     if (!data) return [] as { uf: string; estado: string; regiao: string; estabelecimentos: number; populacao: number, estPor100k: number }[];
