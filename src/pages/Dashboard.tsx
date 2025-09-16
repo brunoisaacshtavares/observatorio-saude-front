@@ -1,20 +1,60 @@
+import React from "react";
 import Header from "../components/layout/Header";
 import StatCard from "../components/cards/StatCard";
-import { Building2, Bed, TrendingUp, MapPin } from "lucide-react";
+import { Building2, Bed, TrendingUp, TrendingDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getEstabelecimentos } from "../services/establishments";
 import { formatNumber } from "../utils/formatters";
 import EstablishmentsBarChart from "../components/charts/EstablishmentsBarChart";
 import MapPlaceHolder from "../components/map/MapPlaceHolder";
 import UpdatesList from "../components/news/UpdatesList";
+import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
 
 export default function Dashboard() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["estabelecimentos-total"],
-    queryFn: () => getEstabelecimentos(1, 1),
+  const { 
+    data: ufCounts, 
+    isLoading: isLoadingUfs, 
+    isError: isErrorUfs 
+  } = useQuery({
+    queryKey: ["estabelecimentos-por-estado"],
+    queryFn: () => getTotalEstabelecimentosPorEstado(),
+    select: (data) => {
+      return data
+        .map(item => ({
+          uf: item.codUf,
+          qty: item.totalEstabelecimentos,
+          sigla: item.siglaUf,
+          nome: item.nomeUf,
+          regiao: item.regiao,
+          populacao: item.populacao,
+          cobertura: item.coberturaEstabelecimentos
+        }))
+        .sort((a, b) => b.qty - a.qty);
+    },
   });
 
-  const totalEstabs = data?.totalCount ?? 0;
+  const { 
+    data: totalData, 
+    isLoading: isLoadingTotal, 
+    isError: isErrorTotal 
+  } = useQuery({
+    queryKey: ["contagem-total"],
+    queryFn: () => getTotalEstabelecimentos(),
+  });
+
+  const { melhorCobertura, piorCobertura } = React.useMemo(() => {
+    if (!ufCounts || !Array.isArray(ufCounts) || ufCounts.length === 0) {
+      return { melhorCobertura: null, piorCobertura: null };
+    }
+
+    const sortedData = [...ufCounts].sort(
+      (a, b) => a.cobertura - b.cobertura
+    );
+
+    return {
+      piorCobertura: sortedData[0],
+      melhorCobertura: sortedData[sortedData.length - 1],
+    };
+  }, [ufCounts]);
 
   const updates = [
     {
@@ -43,13 +83,37 @@ export default function Dashboard() {
 
       {}
       <section className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Total de Estabelecimentos" value={isLoading ? "…" : isError ? "Erro" : formatNumber(totalEstabs)} icon={<Building2 />} iconBgClass="bg-[#004F6D]" hint="Cadastrados no CNES" />
+        <StatCard
+          label="Total de Estabelecimentos"
+          value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalData?.totalEstabelecimentos ?? 0)}
+          icon={<Building2 />}
+          iconBgClass="bg-[#004F6D]"
+          hint="Cadastrados no CNES"
+        />
 
-        <StatCard label="Total de Leitos" value="—" hint="Aguardando endpoint de leitos" icon={<Bed />} iconBgClass="bg-[#00A67D]" />
+        <StatCard
+          label="Total de Leitos"
+          value="—"
+          hint="Aguardando endpoint de leitos"
+          icon={<Bed />}
+          iconBgClass="bg-[#00A67D]"
+        />
 
-        <StatCard label="Melhor Cobertura" value="—" hint="Aguardando métrica de cobertura" icon={<TrendingUp />} iconBgClass="bg-[#22C55E]" />
+        <StatCard
+          label="Melhor Cobertura"
+          value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : melhorCobertura?.nome ?? "N/A"}
+          icon={<TrendingUp />}
+          iconBgClass="bg-[#22C55E]"
+          hint={melhorCobertura ? `${melhorCobertura.cobertura.toFixed(1)} por 100k hab.` : (isLoadingUfs ? "" : "Sem dados")}
+        />
 
-        <StatCard label="Menor Cobertura" value="—" hint="Aguardando métrica de cobertura" icon={<MapPin />} iconBgClass="bg-amber-400" />
+        <StatCard
+          label="Pior Cobertura"
+          value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : piorCobertura?.nome ?? "N/A"}
+          icon={<TrendingDown />}
+          iconBgClass="bg-amber-400"
+          hint={piorCobertura ? `${piorCobertura.cobertura.toFixed(1)} por 100k hab.` : (isLoadingUfs ? "" : "Sem dados")}
+        />
       </section>
 
       {}

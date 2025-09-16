@@ -52,3 +52,17 @@ export type Paginado<T> = {
   totalCount: number;
   totalPages: number;
 };
+
+export type ContagemPorEstado = {
+  codUf: number;
+  totalEstabelecimentos: number;
+  nomeUf: string;
+  siglaUf: string;
+  regiao: string;
+  populacao: number;
+  coberturaEstabelecimentos: number
+};
+
+export type ContagemTotal = {
+  totalEstabelecimentos: number;
+};
