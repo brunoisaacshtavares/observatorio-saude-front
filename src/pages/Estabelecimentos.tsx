@@ -8,7 +8,7 @@ import { Building2, UsersRound, Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatNumber, UF_METADATA } from "../utils/formatters";
 import { useQuery } from "@tanstack/react-query";
-import { getUFCountsByAmostra, getEstabelecimentos } from "../services/establishments";
+import { getUFCountsByAmostra, getEstabelecimentos, getEstabelecimentosPorUF } from "../services/establishments";
 import { useState as useReactState } from "react";
 
 function useUFData() {
@@ -38,11 +38,11 @@ export default function Estabelecimentos() {
   const [estadoSelecionado, setEstadoSelecionado] = useState<string | null>(null);
   const { rows, isLoading, isError } = useUFData();
   const [selectedRegiao, setSelectedRegiao] = useReactState<string | null>(null);
-  const [selectedUf, setSelectedUf] = useReactState<string | null>(null);
+  const [selectedUfs, setSelectedUfs] = useReactState<string[]>([]);
   const [appliedRegiao, setAppliedRegiao] = useReactState<string | null>(null);
-  const [appliedUf, setAppliedUf] = useReactState<string | null>(null);
+  const [appliedUfs, setAppliedUfs] = useReactState<string[]>([]);
   const [draftRegiao, setDraftRegiao] = useReactState<string | null>(null);
-  const [draftUf, setDraftUf] = useReactState<string | null>(null);
+  const [draftUfs, setDraftUfs] = useReactState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useReactState(false);
 
   const {
@@ -55,20 +55,26 @@ export default function Estabelecimentos() {
   });
 
   const filtered = useMemo(() => {
+    if (appliedUfs.length === 0 && !appliedRegiao && !q) return [] as typeof rows;
+
     let base = [...rows];
-    if (!q) return base;
-    const term = q.toLowerCase();
-    base = base.filter((s) => s.estado.toLowerCase().includes(term) || s.regiao.toLowerCase().includes(term) || s.uf.toLowerCase().includes(term));
-    if (appliedRegiao) base = base.filter((s) => s.regiao === appliedRegiao);
-    if (appliedUf) base = base.filter((s) => s.uf === appliedUf);
+    if (appliedUfs.length > 0) {
+      base = base.filter((s) => appliedUfs.includes(s.uf));
+    } else if (appliedRegiao) {
+      base = base.filter((s) => s.regiao === appliedRegiao);
+    }
+    if (q) {
+      const term = q.toLowerCase();
+      base = base.filter((s) => s.estado.toLowerCase().includes(term) || s.regiao.toLowerCase().includes(term) || s.uf.toLowerCase().includes(term));
+    }
     return base;
-  }, [q, rows, appliedRegiao, appliedUf]);
+  }, [q, rows, appliedRegiao, appliedUfs]);
 
   const filterLabel = useMemo(() => {
-    if (!selectedRegiao && !selectedUf) return "Todos os Estados";
-    if (selectedRegiao && selectedUf) return `${selectedUf} • ${selectedRegiao}`;
-    return selectedUf ?? selectedRegiao!;
-  }, [selectedRegiao, selectedUf]);
+    if (selectedUfs.length === 0 && !selectedRegiao) return "Todos os Estados";
+    if (selectedUfs.length > 0) return selectedUfs.length === 1 ? selectedUfs[0] : `${selectedUfs[0]} +${selectedUfs.length - 1}`;
+    return selectedRegiao!;
+  }, [selectedRegiao, selectedUfs]);
 
   const ufOptions = useMemo(() => {
     const all = rows.map((s) => s.uf);
@@ -82,6 +88,11 @@ export default function Estabelecimentos() {
 
   const totalNacional = useMemo(() => rows.reduce((acc, s) => acc + s.estabelecimentos, 0), [rows]);
   const estabPor100k = (s: (typeof rows)[number]) => s.estabelecimentos / (s.populacao / 100_000);
+
+  const { data: estabUF, isLoading: loadingUF } = useQuery({
+    queryKey: ["estabelecimentos-por-uf", estadoSelecionado],
+    queryFn: () => (estadoSelecionado ? getEstabelecimentosPorUF(estadoSelecionado, 100) : Promise.resolve([])),
+  });
 
   return (
     <div className="space-y-4">
@@ -101,7 +112,7 @@ export default function Estabelecimentos() {
               className: "min-w-[180px] justify-center",
               onClick: () => {
                 setDraftRegiao(selectedRegiao);
-                setDraftUf(selectedUf);
+                setDraftUfs(selectedUfs);
                 setIsFilterOpen((v) => !v);
               },
             },
@@ -111,7 +122,7 @@ export default function Estabelecimentos() {
               icon: <Filter size={16} />,
               onClick: () => {
                 setAppliedRegiao(selectedRegiao);
-                setAppliedUf(selectedUf);
+                setAppliedUfs(selectedUfs);
               },
             },
           ]}
@@ -140,14 +151,24 @@ export default function Estabelecimentos() {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">UF</label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#004F6D]/20 focus:border-[#004F6D]" value={draftUf ?? ""} onChange={(e) => setDraftUf(e.target.value || null)}>
-                    <option value="">Todas</option>
-                    {ufOptions.map((sigla) => (
-                      <option key={sigla} value={sigla}>
-                        {sigla}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {ufOptions.map((sigla) => {
+                      const active = draftUfs.includes(sigla);
+                      return (
+                        <button
+                          key={sigla}
+                          type="button"
+                          title={Object.values(UF_METADATA).find((m) => m.sigla === sigla)?.nome || sigla}
+                          className={`px-2 py-1 rounded-md border text-xs ${active ? "bg-[#004F6D] text-white border-[#004F6D]" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                          onClick={() => {
+                            setDraftUfs((prev) => (prev.includes(sigla) ? prev.filter((s) => s !== sigla) : [...prev, sigla]));
+                          }}
+                        >
+                          {sigla}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -156,9 +177,11 @@ export default function Estabelecimentos() {
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition"
                   onClick={() => {
                     setDraftRegiao(null);
-                    setDraftUf(null);
+                    setDraftUfs([]);
                     setSelectedRegiao(null);
-                    setSelectedUf(null);
+                    setSelectedUfs([]);
+                    setAppliedRegiao(null);
+                    setAppliedUfs([]);
                     setIsFilterOpen(false);
                   }}
                 >
@@ -168,7 +191,7 @@ export default function Estabelecimentos() {
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white bg-[#004F6D] hover:opacity-95 transition"
                   onClick={() => {
                     setSelectedRegiao(draftRegiao);
-                    setSelectedUf(draftUf);
+                    setSelectedUfs(draftUfs);
                     setIsFilterOpen(false);
                   }}
                 >
@@ -189,8 +212,9 @@ export default function Estabelecimentos() {
         ) : (
           <RankingBarChart
             title="Ranking de Estados por Número de Estabelecimentos"
-            data={rows.map((s) => ({
+            data={filtered.map((s) => ({
               estado: s.estado,
+              uf: s.uf,
               estabelecimentos: s.estabelecimentos,
             }))}
           />
@@ -203,7 +227,7 @@ export default function Estabelecimentos() {
         ) : (
           <ScatterChartCard
             title="Relação População x Estabelecimentos"
-            data={rows.map((s) => ({
+            data={filtered.map((s) => ({
               estado: s.estado,
               populacao: s.populacao,
               estabelecimentos: s.estabelecimentos,
@@ -215,7 +239,10 @@ export default function Estabelecimentos() {
       {}
       <section className="card p-0 overflow-hidden">
         <div className="px-5 py-4">
-          <h3 className="text-base md:text-lg font-semibold text-slate-900">Detalhes por Estado</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-base md:text-lg font-semibold text-slate-900">Detalhes por Estado</h3>
+            {estadoSelecionado ? <span className="text-xs text-slate-500">UF selecionada: {estadoSelecionado}</span> : null}
+          </div>
         </div>
         {isLoading ? (
           <div className="px-5 py-4 text-sm text-slate-500">Carregando…</div>
@@ -229,6 +256,8 @@ export default function Estabelecimentos() {
             }))}
             onSelectUF={setEstadoSelecionado}
             selectedUF={estadoSelecionado}
+            estabelecimentosUF={estabUF}
+            loadingEstabelecimentos={loadingUF}
           />
         )}
       </section>

@@ -58,3 +58,21 @@ export async function getEstabelecimentosAmostra(limit = 600) {
   }
   return items.slice(0, limit);
 }
+
+export async function getEstabelecimentosPorUF(ufSigla: string, limit = 100) {
+  const entry = Object.entries(UF_METADATA).find(([, meta]) => meta.sigla === ufSigla);
+  if (!entry) return [] as EstabelecimentoItem[];
+  const ufCode = Number(entry[0]);
+
+  const items: EstabelecimentoItem[] = [];
+  const pageSize = Math.min(100, limit);
+  let page = 1;
+  while (items.length < limit) {
+    const resp = await getEstabelecimentos(page, pageSize);
+    const matches = resp.items.filter((it) => it.localizacao.codUf === ufCode);
+    items.push(...matches);
+    if (resp.items.length < pageSize) break;
+    page += 1;
+  }
+  return items.slice(0, limit);
+}
