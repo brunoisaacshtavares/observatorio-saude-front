@@ -11,3 +11,11 @@
 .card-value {
   @apply text-2xl md:text-3xl font-semibold text-slate-900;
 }
+
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-bar-rectangle:focus,
+.recharts-layer:focus,
+svg:focus {
+  outline: none;
+}

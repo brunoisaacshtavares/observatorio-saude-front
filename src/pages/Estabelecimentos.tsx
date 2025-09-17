@@ -2,14 +2,14 @@ import PageHeader from "../components/common/PageHeader";
 import SearchBar from "../components/estabelecimentos/SearchBar";
 import RankingBarChart from "../components/estabelecimentos/RankingBarChart";
 import ScatterChartCard from "../components/estabelecimentos/ScatterChartCard";
+import { getRegionColor } from "../utils/colors";
 import StateTable from "../components/estabelecimentos/StateTable";
 import StatGradientCard from "../components/cards/StatGradientCard";
 import { Building2, UsersRound, Filter } from "lucide-react";
-import { useMemo, useState } from "react";
-import { formatNumber } from "../utils/formatters";
-import { useQuery } from "@tanstack/react-query";
-import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
-import { getUFCountsByAmostra, getEstabelecimentos, getEstabelecimentosPorUF } from "../services/establishments";
+import { useMemo, useState, useEffect } from "react";
+import { formatNumber, UF_METADATA } from "../utils/formatters";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado, getEstabelecimentosPorUFPage } from "../services/establishments";
 import { useState as useReactState } from "react";
 
 function useUFData() {
@@ -46,17 +46,63 @@ function useUFData() {
   return { rows, isLoading, isError };
 }
 
+const FILTERS_STORAGE_KEY = "estabelecimentos-filtros-v1";
+
 export default function Estabelecimentos() {
-  const [q, setQ] = useState("");
-  const [estadoSelecionado, setEstadoSelecionado] = useState<string | null>(null);
+  const loadFilters = () => {
+    const defaults = {
+      selectedRegiao: null as string | null,
+      selectedUfs: [] as string[],
+      appliedRegiao: null as string | null,
+      appliedUfs: [] as string[],
+      q: "",
+    };
+    try {
+      if (typeof window === "undefined") return defaults;
+      const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+      if (!raw) return defaults;
+      const parsed = JSON.parse(raw) as Partial<typeof defaults>;
+      const selReg = parsed.selectedRegiao ?? null;
+      const selUfs = Array.isArray(parsed.selectedUfs) ? parsed.selectedUfs : [];
+      const appReg = parsed.appliedRegiao ?? selReg ?? null;
+      const appUfs = Array.isArray(parsed.appliedUfs) && parsed.appliedUfs.length > 0 ? parsed.appliedUfs : selUfs;
+      return {
+        selectedRegiao: selReg,
+        selectedUfs: selUfs,
+        appliedRegiao: appReg,
+        appliedUfs: appUfs,
+        q: typeof parsed.q === "string" ? parsed.q : "",
+      };
+    } catch {
+      return defaults;
+    }
+  };
+
+  const init = loadFilters();
+  const [q, setQ] = useState(init.q);
+  const [openUFs, setOpenUFs] = useState<string[]>([]);
+  const [ufPageByUF, setUfPageByUF] = useState<Record<string, number>>({});
   const { rows, isLoading, isError } = useUFData();
-  const [selectedRegiao, setSelectedRegiao] = useReactState<string | null>(null);
-  const [selectedUfs, setSelectedUfs] = useReactState<string[]>([]);
-  const [appliedRegiao, setAppliedRegiao] = useReactState<string | null>(null);
-  const [appliedUfs, setAppliedUfs] = useReactState<string[]>([]);
+  const [selectedRegiao, setSelectedRegiao] = useReactState<string | null>(() => init.selectedRegiao);
+  const [selectedUfs, setSelectedUfs] = useReactState<string[]>(() => init.selectedUfs);
+  const [appliedRegiao, setAppliedRegiao] = useReactState<string | null>(() => init.appliedRegiao);
+  const [appliedUfs, setAppliedUfs] = useReactState<string[]>(() => init.appliedUfs);
   const [draftRegiao, setDraftRegiao] = useReactState<string | null>(null);
   const [draftUfs, setDraftUfs] = useReactState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useReactState(false);
+
+  useEffect(() => {
+    try {
+      const payload = {
+        selectedRegiao,
+        selectedUfs,
+        appliedRegiao,
+        appliedUfs,
+        q,
+      };
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(payload));
+    } catch {}
+  }, [selectedRegiao, selectedUfs, appliedRegiao, appliedUfs, q]);
 
   const {
     data: totalResp,
@@ -99,20 +145,62 @@ export default function Estabelecimentos() {
     return [...new Set(ufs)].sort();
   }, [rows, draftRegiao]);
 
-  const totalNacional = useMemo(() => rows.reduce((acc, s) => acc + s.estabelecimentos, 0), [rows]);
-  const estabPor100k = (s: (typeof rows)[number]) => s.estabelecimentos / (s.populacao / 100_000);
+  const ufSiglaToNome = useMemo(() => {
+    const map: Record<string, string> = {};
+    Object.values(UF_METADATA).forEach((m) => {
+      map[m.sigla] = m.nome;
+    });
+    return map;
+  }, []);
 
-  const { data: estabUF, isLoading: loadingUF } = useQuery({
-    queryKey: ["estabelecimentos-por-uf", estadoSelecionado],
-    queryFn: () => (estadoSelecionado ? getEstabelecimentosPorUF(estadoSelecionado, 100) : Promise.resolve([])),
+  const totalNacional = useMemo(() => rows.reduce((acc, s) => acc + s.estabelecimentos, 0), [rows]);
+
+  const ufQueries = useQueries({
+    queries: openUFs.map((uf) => ({
+      queryKey: ["estabelecimentos-por-uf", uf, ufPageByUF[uf] || 1] as const,
+      queryFn: () => getEstabelecimentosPorUFPage(uf, ufPageByUF[uf] || 1, 30),
+      placeholderData: (prev: any) => prev,
+    })),
   });
+
+  useMemo(() => {
+    openUFs.forEach((uf) => {
+      const nextPage = (ufPageByUF[uf] || 1) + 1;
+      getEstabelecimentosPorUFPage(uf, nextPage, 30).catch(() => {});
+      const nextNextPage = nextPage + 1;
+      getEstabelecimentosPorUFPage(uf, nextNextPage, 30).catch(() => {});
+    });
+  }, [openUFs, ufPageByUF]);
+
+  const dataByUF = useMemo(() => {
+    const map: Record<string, any> = {};
+    openUFs.forEach((uf, idx) => {
+      const d = ufQueries[idx]?.data as { items?: any[] } | undefined;
+      map[uf] = d?.items ?? [];
+    });
+    return map as Record<string, any[]>;
+  }, [openUFs, ufQueries]);
+
+  const loadingByUF = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    openUFs.forEach((uf, idx) => {
+      map[uf] = Boolean(ufQueries[idx]?.isLoading);
+    });
+    return map;
+  }, [openUFs, ufQueries]);
+
+  const hasNextByUF = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    openUFs.forEach((uf, idx) => {
+      map[uf] = Boolean(ufQueries[idx]?.data?.hasNextPage);
+    });
+    return map;
+  }, [openUFs, ufQueries]);
 
   return (
     <div className="space-y-4">
-      {}
       <PageHeader title="Estabelecimentos de Saúde" description="Análise detalhada dos estabelecimentos cadastrados no CNES por região." />
 
-      {}
       <div className="relative">
         <SearchBar
           value={q}
@@ -168,17 +256,22 @@ export default function Estabelecimentos() {
                     {ufOptions.map((sigla) => {
                       const active = draftUfs.includes(sigla);
                       return (
-                        <button
-                          key={sigla}
-                          type="button"
-                          title={Object.values(UF_METADATA).find((m) => m.sigla === sigla)?.nome || sigla}
-                          className={`px-2 py-1 rounded-md border text-xs ${active ? "bg-[#004F6D] text-white border-[#004F6D]" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
-                          onClick={() => {
-                            setDraftUfs((prev) => (prev.includes(sigla) ? prev.filter((s) => s !== sigla) : [...prev, sigla]));
-                          }}
-                        >
-                          {sigla}
-                        </button>
+                        <div key={sigla} className="relative group">
+                          <button
+                            type="button"
+                            aria-describedby={`tooltip-uf-${sigla}`}
+                            className={`px-2 py-1 rounded-md border text-xs ${active ? "bg-[#004F6D] text-white border-[#004F6D]" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}
+                            onClick={() => {
+                              setDraftUfs((prev) => (prev.includes(sigla) ? prev.filter((s) => s !== sigla) : [...prev, sigla]));
+                            }}
+                          >
+                            {sigla}
+                          </button>
+                          <div id={`tooltip-uf-${sigla}`} className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-slate-800 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-100 z-20 shadow-md">
+                            {ufSiglaToNome[sigla] || sigla}
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800" />
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -216,7 +309,6 @@ export default function Estabelecimentos() {
         )}
       </div>
 
-      {}
       <section className="grid gap-4 lg:grid-cols-2">
         {isLoading ? (
           <div className="card p-4 text-sm text-slate-500">Carregando…</div>
@@ -228,8 +320,22 @@ export default function Estabelecimentos() {
             data={filtered.map((s) => ({
               estado: s.estado,
               uf: s.uf,
+              regiao: s.regiao,
+              color: getRegionColor(s.regiao),
               estabelecimentos: s.estabelecimentos,
             }))}
+            onBarClick={({ uf, estado }) => {
+              const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
+              if (!resolvedUf) return;
+              setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
+              setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
+              const section = document.getElementById("detalhes-por-estado");
+              if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+              setTimeout(() => {
+                const row = document.getElementById(`state-row-${resolvedUf}`);
+                if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 250);
+            }}
           />
         )}
 
@@ -242,6 +348,8 @@ export default function Estabelecimentos() {
             title="Relação População x Estabelecimentos"
             data={filtered.map((s) => ({
               estado: s.estado,
+              regiao: s.regiao,
+              color: getRegionColor(s.regiao),
               populacao: s.populacao,
               estabelecimentos: s.estabelecimentos,
             }))}
@@ -249,12 +357,11 @@ export default function Estabelecimentos() {
         )}
       </section>
 
-      {}
-      <section className="card p-0 overflow-hidden">
+      <section id="detalhes-por-estado" className="card p-0 overflow-hidden">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-base md:text-lg font-semibold text-slate-900">Detalhes por Estado</h3>
-            {estadoSelecionado ? <span className="text-xs text-slate-500">UF selecionada: {estadoSelecionado}</span> : null}
+            {openUFs.length ? <span className="text-xs text-slate-500">UFs abertas: {openUFs.join(", ")}</span> : null}
           </div>
         </div>
         {isLoading ? (
@@ -267,15 +374,20 @@ export default function Estabelecimentos() {
               ...s,
               estPor100k: s.estPor100k,
             }))}
-            onSelectUF={setEstadoSelecionado}
-            selectedUF={estadoSelecionado}
-            estabelecimentosUF={estabUF}
-            loadingEstabelecimentos={loadingUF}
+            onToggleUF={(uf) => {
+              setOpenUFs((prev) => (prev.includes(uf) ? prev.filter((x) => x !== uf) : [...prev, uf]));
+              setUfPageByUF((prev) => ({ ...prev, [uf]: 1 }));
+            }}
+            openUFs={openUFs}
+            dataByUF={dataByUF as any}
+            loadingByUF={loadingByUF}
+            pageByUF={ufPageByUF}
+            hasNextByUF={hasNextByUF}
+            onChangePageForUF={(uf, page) => setUfPageByUF((prev) => ({ ...prev, [uf]: page }))}
           />
         )}
       </section>
 
-      {}
       <section className="grid gap-4 md:grid-cols-3">
         <StatGradientCard title="Total Nacional" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalResp?.totalEstabelecimentos ?? 0)} sublabel="Estabelecimentos" gradientFrom="#004F6D" gradientTo="#003A52" icon={<Building2 />} />
         <StatGradientCard title="Média Nacional" value={isLoading ? "…" : isError ? "Erro" : formatNumber(rows.length ? Math.round(totalNacional / rows.length) : 0)} sublabel="Por estado" gradientFrom="#00A67D" gradientTo="#008A67" icon={<UsersRound />} />
