@@ -221,6 +221,8 @@ export default function Estabelecimentos() {
     return map;
   }, [openUFs, ufQueries]);
 
+  const isSelectionEmpty = useMemo(() => appliedUfs.length === 0 && !appliedRegiao, [appliedUfs, appliedRegiao]);
+
   return (
     <div className="space-y-4">
       <PageHeader title="Estabelecimentos de Saúde" description="Análise detalhada dos estabelecimentos cadastrados no CNES por região." />
@@ -236,7 +238,11 @@ export default function Estabelecimentos() {
             return { label: u, value: u, color: getRegionColor(row?.regiao), title: row?.estado || u };
           })}
           onRemoveChip={(uf) => {
-            setSelectedUfs((prev) => prev.filter((x) => x !== uf));
+            setSelectedUfs((prev) => {
+              const next = prev.filter((x) => x !== uf);
+              setAppliedUfs(next);
+              return next;
+            });
           }}
           onEnter={() => {
             const uf = resolveUFByInput(q);
@@ -276,7 +282,7 @@ export default function Estabelecimentos() {
         />
 
         {isFilterOpen && (
-          <div className="absolute right-0 z-10 mt-2 w-full max-w-lg">
+          <div className="absolute right-0 z-50 mt-2 w-full max-w-lg">
             <div className="rounded-xl bg-white shadow-xl ring-1 ring-slate-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100">
                 <p className="text-sm font-semibold text-slate-900">Filtros</p>
@@ -378,58 +384,72 @@ export default function Estabelecimentos() {
         )}
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        {isLoading ? (
-          <div className="card p-4 text-sm text-slate-500">Carregando…</div>
-        ) : isError ? (
-          <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
-        ) : (
-          <>
-            <RankingBarChart
-              title="Ranking de Estados por Número de Estabelecimentos"
+      <div className="relative">
+        <section className="grid gap-4 lg:grid-cols-2">
+          {isLoading ? (
+            <div className="card p-4 text-sm text-slate-500">Carregando…</div>
+          ) : isError ? (
+            <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
+          ) : (
+            <>
+              <RankingBarChart
+                title="Ranking de Estados por Número de Estabelecimentos"
+                data={filtered.map((s) => ({
+                  estado: s.estado,
+                  uf: s.uf,
+                  regiao: s.regiao,
+                  color: getRegionColor(s.regiao),
+                  estabelecimentos: s.estabelecimentos,
+                }))}
+                asc={sortAsc}
+                onToggleAsc={() => setSortAsc((v) => !v)}
+                onBarClick={({ uf, estado }) => {
+                  const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
+                  if (!resolvedUf) return;
+                  setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
+                  setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
+                  const section = document.getElementById("detalhes-por-estado");
+                  if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+                  setTimeout(() => {
+                    const row = document.getElementById(`state-row-${resolvedUf}`);
+                    if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 250);
+                }}
+              />
+              {/* legenda movida para dentro do RankingBarChart */}
+            </>
+          )}
+
+          {isLoading ? (
+            <div className="card p-4 text-sm text-slate-500">Carregando…</div>
+          ) : isError ? (
+            <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
+          ) : (
+            <ScatterChartCard
+              title="Relação População x Estabelecimentos"
               data={filtered.map((s) => ({
                 estado: s.estado,
-                uf: s.uf,
                 regiao: s.regiao,
                 color: getRegionColor(s.regiao),
+                populacao: s.populacao,
                 estabelecimentos: s.estabelecimentos,
               }))}
-              asc={sortAsc}
-              onToggleAsc={() => setSortAsc((v) => !v)}
-              onBarClick={({ uf, estado }) => {
-                const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
-                if (!resolvedUf) return;
-                setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
-                setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
-                const section = document.getElementById("detalhes-por-estado");
-                if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
-                setTimeout(() => {
-                  const row = document.getElementById(`state-row-${resolvedUf}`);
-                  if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 250);
-              }}
             />
-            {/* legenda movida para dentro do RankingBarChart */}
-          </>
-        )}
+          )}
+        </section>
 
-        {isLoading ? (
-          <div className="card p-4 text-sm text-slate-500">Carregando…</div>
-        ) : isError ? (
-          <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
-        ) : (
-          <ScatterChartCard
-            title="Relação População x Estabelecimentos"
-            data={filtered.map((s) => ({
-              estado: s.estado,
-              regiao: s.regiao,
-              color: getRegionColor(s.regiao),
-              populacao: s.populacao,
-              estabelecimentos: s.estabelecimentos,
-            }))}
-          />
-        )}
-      </section>
+        {isSelectionEmpty && !isLoading && !isError ? (
+          <>
+            <div className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-white/70 backdrop-blur-sm" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+              <div className="max-w-md w-full rounded-xl border border-slate-200 bg-white/95 backdrop-blur p-6 text-center shadow-xl">
+                <p className="text-sm font-semibold text-slate-900">Selecione os Estados</p>
+                <p className="mt-1 text-xs text-slate-600">Escolha um ou mais estados e clique em “Filtrar” para visualizar os gráficos.</p>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
 
       <section id="detalhes-por-estado" className="card p-0 overflow-hidden">
         <div className="px-5 py-4">
