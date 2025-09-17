@@ -7,10 +7,11 @@ type Props = {
   title: string;
   data: { estado: string; uf?: string; regiao?: string; color?: string; estabelecimentos: number }[];
   onBarClick?: (ufOrEstado: { uf?: string; estado: string }) => void;
+  asc: boolean;
+  onToggleAsc: () => void;
 };
 
-export default function RankingBarChart({ title, data, onBarClick }: Props) {
-  const [asc, setAsc] = useState(false);
+export default function RankingBarChart({ title, data, onBarClick, asc, onToggleAsc }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const sorted = [...data].map((d) => ({ ...d, label: d.uf ?? d.estado })).sort((a, b) => (asc ? a.estabelecimentos - b.estabelecimentos : b.estabelecimentos - a.estabelecimentos));
   const CustomTooltip = ({ active, payload }: any) => {
@@ -27,9 +28,9 @@ export default function RankingBarChart({ title, data, onBarClick }: Props) {
         <p className="text-sm font-medium text-slate-700">{title}</p>
         <button
           type="button"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-800 transition"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white bg-gradient-to-r from-[#004F6D] to-[#00A67D] shadow-sm ring-1 ring-white/20 hover:opacity-95 transition"
           onClick={() => {
-            setAsc((v) => !v);
+            onToggleAsc();
             setHoveredIndex(null);
           }}
           title={asc ? "Ordem: crescente (maior à direita)" : "Ordem: decrescente (maior à esquerda)"}

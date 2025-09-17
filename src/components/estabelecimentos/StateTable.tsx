@@ -21,14 +21,15 @@ type Props = {
   pageByUF?: Record<string, number | undefined>;
   hasNextByUF?: Record<string, boolean | undefined>;
   onChangePageForUF?: (uf: string, page: number) => void;
+  asc?: boolean;
 };
 
 function getDotColorByRegion(regiao: Row["regiao"]): string {
   return getRegionColor(regiao);
 }
 
-export default function StateTable({ rows, openUFs = [], onToggleUF, dataByUF = {}, loadingByUF = {}, pageByUF = {}, hasNextByUF = {}, onChangePageForUF }: Props) {
-  const sorted = [...rows].sort((a, b) => b.estabelecimentos - a.estabelecimentos);
+export default function StateTable({ rows, openUFs = [], onToggleUF, dataByUF = {}, loadingByUF = {}, pageByUF = {}, hasNextByUF = {}, onChangePageForUF, asc = false }: Props) {
+  const sorted = [...rows].sort((a, b) => (asc ? a.estabelecimentos - b.estabelecimentos : b.estabelecimentos - a.estabelecimentos));
   const listContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const lastHeightsRef = useRef<Record<string, number>>({});
 

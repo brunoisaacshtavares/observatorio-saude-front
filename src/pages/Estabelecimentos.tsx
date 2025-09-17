@@ -90,6 +90,7 @@ export default function Estabelecimentos() {
   const [draftRegiao, setDraftRegiao] = useReactState<string | null>(null);
   const [draftUfs, setDraftUfs] = useReactState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useReactState(false);
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     try {
@@ -324,6 +325,8 @@ export default function Estabelecimentos() {
               color: getRegionColor(s.regiao),
               estabelecimentos: s.estabelecimentos,
             }))}
+            asc={sortAsc}
+            onToggleAsc={() => setSortAsc((v) => !v)}
             onBarClick={({ uf, estado }) => {
               const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
               if (!resolvedUf) return;
@@ -374,6 +377,7 @@ export default function Estabelecimentos() {
               ...s,
               estPor100k: s.estPor100k,
             }))}
+            asc={sortAsc}
             onToggleUF={(uf) => {
               setOpenUFs((prev) => (prev.includes(uf) ? prev.filter((x) => x !== uf) : [...prev, uf]));
               setUfPageByUF((prev) => ({ ...prev, [uf]: 1 }));
