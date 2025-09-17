@@ -154,6 +154,10 @@ export default function Estabelecimentos() {
     return map;
   }, []);
 
+  const selectedVisibleCount = useMemo(() => {
+    return draftUfs.filter((u) => ufOptions.includes(u)).length;
+  }, [draftUfs, ufOptions]);
+
   const resolveUFByInput = useMemo(() => {
     const normalize = (s: string) =>
       s
@@ -293,8 +297,28 @@ export default function Estabelecimentos() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">UF</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-medium text-slate-600">UF</label>
+                    <button
+                      type="button"
+                      className="text-xs text-[#004F6D]"
+                      onClick={() => {
+                        setDraftUfs((prev) => {
+                          const anyVisibleSelected = prev.some((u) => ufOptions.includes(u));
+                          if (anyVisibleSelected) {
+                            // Limpar apenas as UFs visíveis (da região atual)
+                            return prev.filter((u) => !ufOptions.includes(u));
+                          }
+                          // Selecionar todas as UFs visíveis (todas do BR se sem região)
+                          const merged = Array.from(new Set([...prev, ...ufOptions]));
+                          return merged;
+                        });
+                      }}
+                    >
+                      {selectedVisibleCount > 0 ? "Limpar" : "Todos"}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {ufOptions.map((sigla) => {
                       const active = draftUfs.includes(sigla);
                       return (
