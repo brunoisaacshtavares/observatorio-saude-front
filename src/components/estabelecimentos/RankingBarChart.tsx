@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
+import { formatNumber } from "../../utils/formatters";
 
 type Props = {
   title: string;
@@ -12,11 +13,28 @@ export default function RankingBarChart({ title, data, onBarClick }: Props) {
   const [asc, setAsc] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const sorted = [...data].map((d) => ({ ...d, label: d.uf ?? d.estado })).sort((a, b) => (asc ? a.estabelecimentos - b.estabelecimentos : b.estabelecimentos - a.estabelecimentos));
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const p = payload[0]?.payload;
+      if (!p) return null;
+      return <div className="rounded-md bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-md ring-1 ring-slate-200">{`${p.estado}: ${formatNumber(p.estabelecimentos)}`}</div>;
+    }
+    return null;
+  };
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-medium text-slate-700">{title}</p>
-        <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-800 transition" onClick={() => setAsc((v) => !v)} title={asc ? "Ordem: crescente (maior à direita)" : "Ordem: decrescente (maior à esquerda)"} aria-label={asc ? "Ordenar decrescente" : "Ordenar crescente"}>
+        <button
+          type="button"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-800 transition"
+          onClick={() => {
+            setAsc((v) => !v);
+            setHoveredIndex(null);
+          }}
+          title={asc ? "Ordem: crescente (maior à direita)" : "Ordem: decrescente (maior à esquerda)"}
+          aria-label={asc ? "Ordenar decrescente" : "Ordenar crescente"}
+        >
           <ArrowLeftRight size={16} className={`transition-transform duration-200 ${asc ? "rotate-180" : "rotate-0"}`} />
         </button>
       </div>
@@ -36,11 +54,11 @@ export default function RankingBarChart({ title, data, onBarClick }: Props) {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
             <YAxis tickLine={false} axisLine={false} fontSize={12} />
-            <Tooltip labelFormatter={() => ""} formatter={(value: any, _name: any, props: any) => [value, props.payload.estado]} />
-            <Bar dataKey="estabelecimentos" radius={[4, 4, 0, 0]} className="cursor-pointer">
+            <Tooltip content={<CustomTooltip />} labelFormatter={() => ""} cursor={{ fill: "rgba(148, 163, 184, 0.12)" }} />
+            <Bar dataKey="estabelecimentos" radius={[4, 4, 0, 0]} className="cursor-pointer" isAnimationActive animationBegin={0} animationDuration={350} animationEasing="ease-out" maxBarSize={40}>
               {sorted.map((entry, index) => {
                 const isHovered = hoveredIndex === index;
-                return <Cell key={`cell-${index}`} fill={entry.color || "#004F6D"} fillOpacity={isHovered ? 1 : 0.85} cursor="pointer" onClick={() => onBarClick?.({ uf: entry.uf, estado: entry.estado })} />;
+                return <Cell key={`cell-${entry.label}`} fill={entry.color || "#004F6D"} fillOpacity={isHovered ? 1 : 0.85} cursor="pointer" onClick={() => onBarClick?.({ uf: entry.uf, estado: entry.estado })} />;
               })}
             </Bar>
           </BarChart>

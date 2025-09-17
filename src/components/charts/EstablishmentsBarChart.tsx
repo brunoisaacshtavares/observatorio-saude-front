@@ -43,10 +43,10 @@ export default function EstablishmentsBarChart() {
           <BarChart data={data}>
             <XAxis dataKey="uf" />
             <YAxis />
-            <Tooltip content={<CustomTooltip />} labelFormatter={() => ""} />
-            <Bar dataKey="estabelecimentos">
+            <Tooltip content={<CustomTooltip />} labelFormatter={() => ""} cursor={{ fill: "rgba(148, 163, 184, 0.12)" }} />
+            <Bar dataKey="estabelecimentos" radius={[4, 4, 0, 0]}>
               {data.map((entry: any, index: number) => (
-                <Cell key={`cell-${index}`} fill={entry.color || "#004F6D"} />
+                <Cell key={`cell-${index}`} fill={entry.color || "#004F6D"} fillOpacity={0.85} />
               ))}
             </Bar>
           </BarChart>
