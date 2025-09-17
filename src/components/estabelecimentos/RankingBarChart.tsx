@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
+import { REGION_COLORS } from "../../utils/colors";
 import { formatNumber } from "../../utils/formatters";
 
 type Props = {
@@ -43,7 +44,7 @@ export default function RankingBarChart({ title, data, onBarClick, asc = false, 
           </button>
         ) : null}
       </div>
-      <div className="h-72">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={sorted}
@@ -72,6 +73,22 @@ export default function RankingBarChart({ title, data, onBarClick, asc = false, 
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-3 flex flex-nowrap items-center justify-between text-xs text-slate-600 w-[90%] mx-auto">
+        {(
+          [
+            { nome: "Norte", cor: REGION_COLORS["Norte"] },
+            { nome: "Nordeste", cor: REGION_COLORS["Nordeste"] },
+            { nome: "Centro-Oeste", cor: REGION_COLORS["Centro-Oeste"] },
+            { nome: "Sudeste", cor: REGION_COLORS["Sudeste"] },
+            { nome: "Sul", cor: REGION_COLORS["Sul"] },
+          ] as const
+        ).map((r) => (
+          <div key={r.nome} className="flex items-center gap-3">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: r.cor }} aria-hidden />
+            <span className="text-slate-700">{r.nome}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

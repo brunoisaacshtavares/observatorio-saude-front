@@ -56,6 +56,7 @@ export default function Estabelecimentos() {
       appliedRegiao: null as string | null,
       appliedUfs: [] as string[],
       q: "",
+      showAllWhenEmpty: true as boolean,
     };
     try {
       if (typeof window === "undefined") return defaults;
@@ -72,6 +73,7 @@ export default function Estabelecimentos() {
         appliedRegiao: appReg,
         appliedUfs: appUfs,
         q: typeof parsed.q === "string" ? parsed.q : "",
+        showAllWhenEmpty: typeof parsed.showAllWhenEmpty === "boolean" ? parsed.showAllWhenEmpty : true,
       };
     } catch {
       return defaults;
@@ -87,6 +89,7 @@ export default function Estabelecimentos() {
   const [selectedUfs, setSelectedUfs] = useReactState<string[]>(() => init.selectedUfs);
   const [appliedRegiao, setAppliedRegiao] = useReactState<string | null>(() => init.appliedRegiao);
   const [appliedUfs, setAppliedUfs] = useReactState<string[]>(() => init.appliedUfs);
+  const [showAllWhenEmpty, setShowAllWhenEmpty] = useReactState<boolean>(() => init.showAllWhenEmpty);
   const [draftRegiao, setDraftRegiao] = useReactState<string | null>(null);
   const [draftUfs, setDraftUfs] = useReactState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useReactState(false);
@@ -100,10 +103,11 @@ export default function Estabelecimentos() {
         appliedRegiao,
         appliedUfs,
         q,
+        showAllWhenEmpty,
       };
       localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(payload));
     } catch {}
-  }, [selectedRegiao, selectedUfs, appliedRegiao, appliedUfs, q]);
+  }, [selectedRegiao, selectedUfs, appliedRegiao, appliedUfs, q, showAllWhenEmpty]);
 
   const {
     data: totalResp,
@@ -115,7 +119,7 @@ export default function Estabelecimentos() {
   });
 
   const filtered = useMemo(() => {
-    if (appliedUfs.length === 0 && !appliedRegiao && !q) return [] as typeof rows;
+    if (appliedUfs.length === 0 && !appliedRegiao) return showAllWhenEmpty ? rows : ([] as typeof rows);
 
     let base = [...rows];
     if (appliedUfs.length > 0) {
@@ -123,15 +127,11 @@ export default function Estabelecimentos() {
     } else if (appliedRegiao) {
       base = base.filter((s) => s.regiao === appliedRegiao);
     }
-    if (q) {
-      const term = q.toLowerCase();
-      base = base.filter((s) => s.estado.toLowerCase().includes(term) || s.regiao.toLowerCase().includes(term) || s.uf.toLowerCase().includes(term));
-    }
     return base;
-  }, [q, rows, appliedRegiao, appliedUfs]);
+  }, [rows, appliedRegiao, appliedUfs, showAllWhenEmpty]);
 
   const filterLabel = useMemo(() => {
-    if (selectedUfs.length === 0 && !selectedRegiao) return "Todos os Estados";
+    if (selectedUfs.length === 0 && !selectedRegiao) return "Selecione os Estados";
     if (selectedUfs.length > 0) return selectedUfs.length === 1 ? selectedUfs[0] : `${selectedUfs[0]} +${selectedUfs.length - 1}`;
     return selectedRegiao!;
   }, [selectedRegiao, selectedUfs]);
@@ -152,6 +152,25 @@ export default function Estabelecimentos() {
       map[m.sigla] = m.nome;
     });
     return map;
+  }, []);
+
+  const resolveUFByInput = useMemo(() => {
+    const normalize = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    const entries = Object.values(UF_METADATA);
+    return (raw: string): string | null => {
+      const n = normalize(raw);
+      if (!n) return null;
+      const exactSigla = entries.find((e) => e.sigla.toLowerCase() === n)?.sigla;
+      if (exactSigla) return exactSigla;
+      const exactNome = entries.find((e) => normalize(e.nome) === n)?.sigla;
+      if (exactNome) return exactNome;
+      return null;
+    };
   }, []);
 
   const totalNacional = useMemo(() => rows.reduce((acc, s) => acc + s.estabelecimentos, 0), [rows]);
@@ -207,6 +226,21 @@ export default function Estabelecimentos() {
           value={q}
           onChange={setQ}
           onClear={() => setQ("")}
+          hidePlaceholder={selectedUfs.length >= Object.keys(UF_METADATA).length}
+          chips={selectedUfs.map((u) => {
+            const row = rows.find((r) => r.uf === u);
+            return { label: u, value: u, color: getRegionColor(row?.regiao), title: row?.estado || u };
+          })}
+          onRemoveChip={(uf) => {
+            setSelectedUfs((prev) => prev.filter((x) => x !== uf));
+          }}
+          onEnter={() => {
+            const uf = resolveUFByInput(q);
+            if (!uf) return;
+            setSelectedUfs((prev) => (prev.includes(uf) ? prev : [...prev, uf]));
+            setAppliedUfs((prev) => (prev.includes(uf) ? prev : [...prev, uf]));
+            setQ("");
+          }}
           rightButtons={[
             {
               label: filterLabel,
@@ -223,8 +257,15 @@ export default function Estabelecimentos() {
               variant: "primary",
               icon: <Filter size={16} />,
               onClick: () => {
-                setAppliedRegiao(selectedRegiao);
-                setAppliedUfs(selectedUfs);
+                const reg = isFilterOpen ? draftRegiao : selectedRegiao;
+                const ufs = isFilterOpen ? draftUfs : selectedUfs;
+                if (isFilterOpen) {
+                  setSelectedRegiao(draftRegiao);
+                  setSelectedUfs(draftUfs);
+                  setIsFilterOpen(false);
+                }
+                setAppliedRegiao(reg);
+                setAppliedUfs(ufs);
               },
             },
           ]}
@@ -289,6 +330,7 @@ export default function Estabelecimentos() {
                     setSelectedUfs([]);
                     setAppliedRegiao(null);
                     setAppliedUfs([]);
+                    setShowAllWhenEmpty(false);
                     setIsFilterOpen(false);
                   }}
                 >
@@ -299,6 +341,8 @@ export default function Estabelecimentos() {
                   onClick={() => {
                     setSelectedRegiao(draftRegiao);
                     setSelectedUfs(draftUfs);
+                    // mostrar imediatamente nos chips
+                    // (os dados aplicados continuam sendo controlados por "Filtrar")
                     setIsFilterOpen(false);
                   }}
                 >
@@ -316,30 +360,33 @@ export default function Estabelecimentos() {
         ) : isError ? (
           <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
         ) : (
-          <RankingBarChart
-            title="Ranking de Estados por Número de Estabelecimentos"
-            data={filtered.map((s) => ({
-              estado: s.estado,
-              uf: s.uf,
-              regiao: s.regiao,
-              color: getRegionColor(s.regiao),
-              estabelecimentos: s.estabelecimentos,
-            }))}
-            asc={sortAsc}
-            onToggleAsc={() => setSortAsc((v) => !v)}
-            onBarClick={({ uf, estado }) => {
-              const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
-              if (!resolvedUf) return;
-              setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
-              setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
-              const section = document.getElementById("detalhes-por-estado");
-              if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
-              setTimeout(() => {
-                const row = document.getElementById(`state-row-${resolvedUf}`);
-                if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
-              }, 250);
-            }}
-          />
+          <>
+            <RankingBarChart
+              title="Ranking de Estados por Número de Estabelecimentos"
+              data={filtered.map((s) => ({
+                estado: s.estado,
+                uf: s.uf,
+                regiao: s.regiao,
+                color: getRegionColor(s.regiao),
+                estabelecimentos: s.estabelecimentos,
+              }))}
+              asc={sortAsc}
+              onToggleAsc={() => setSortAsc((v) => !v)}
+              onBarClick={({ uf, estado }) => {
+                const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
+                if (!resolvedUf) return;
+                setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
+                setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
+                const section = document.getElementById("detalhes-por-estado");
+                if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+                setTimeout(() => {
+                  const row = document.getElementById(`state-row-${resolvedUf}`);
+                  if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 250);
+              }}
+            />
+            {/* legenda movida para dentro do RankingBarChart */}
+          </>
         )}
 
         {isLoading ? (

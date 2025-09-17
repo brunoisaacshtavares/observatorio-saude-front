@@ -56,7 +56,7 @@ export default function ScatterChartCard({ title, data }: Props) {
   return (
     <div className="card p-4">
       <p className="text-sm font-medium text-slate-700 mb-3">{title}</p>
-      <div className="h-72 rounded-lg bg-gradient-to-tr from-slate-50 to-emerald-50">
+      <div className="h-80 rounded-lg bg-gradient-to-tr from-slate-50 to-emerald-50">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
