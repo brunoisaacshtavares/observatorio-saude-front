@@ -12,7 +12,7 @@ type Props = {
 export default function StatGradientCard({ title, value, sublabel, gradientFrom, gradientTo, icon }: Props) {
   return (
     <div
-      className="rounded-xl px-4 py-4 text-white flex items-center justify-between shadow-sm"
+      className="rounded-xl px-4 py-4 text-white flex items-center justify-between shadow-lg ring-1 ring-white/20"
       style={{
         background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})`,
       }}

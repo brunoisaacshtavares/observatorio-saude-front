@@ -36,7 +36,7 @@ export default function RankingBarChart({ title, data, onBarClick }: Props) {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
             <YAxis tickLine={false} axisLine={false} fontSize={12} />
-            <Tooltip formatter={(value: any, _name: any, props: any) => [value, props.payload.estado]} />
+            <Tooltip labelFormatter={() => ""} formatter={(value: any, _name: any, props: any) => [value, props.payload.estado]} />
             <Bar dataKey="estabelecimentos" radius={[4, 4, 0, 0]} className="cursor-pointer">
               {sorted.map((entry, index) => {
                 const isHovered = hoveredIndex === index;

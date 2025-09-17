@@ -8,9 +8,9 @@ const linkActive = "relative flex w-full items-center gap-3 pl-4 pr-0 py-2 " + "
 export default function Sidebar() {
   return (
     <aside
-      className="w-64 shrink-0 bg-white border-r border-slate-200
-                 h-[70vh] self-start overflow-hidden flex flex-col
-                 shadow-[0_10px_18px_rgba(0,0,0,0.06)]"
+      className="fixed left-4 top-4 bottom-4 md:left-6 md:top-6 md:bottom-6 w-64
+                 bg-white rounded-xl overflow-hidden flex flex-col
+                 shadow-lg ring-1 ring-slate-200"
     >
       <div className="p-4">
         <h1 className="text-lg font-semibold">Observatório de Saúde</h1>
@@ -19,7 +19,7 @@ export default function Sidebar() {
 
       <div className="h-px w-full bg-slate-200 mb-2" />
 
-      <nav className="px-0 py-1 space-y-1">
+      <nav className="px-0 py-1 space-y-1 flex-1 overflow-auto">
         <NavLink to="/" end className={({ isActive }) => (isActive ? linkActive : linkDefault)}>
           <Home size={18} /> Visão Geral
         </NavLink>

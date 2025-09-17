@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .card {
-  @apply bg-white rounded-xl shadow-card;
+  @apply bg-white rounded-xl shadow-lg ring-1 ring-slate-200;
 }
 .card-head {
   @apply text-sm font-medium text-slate-500;

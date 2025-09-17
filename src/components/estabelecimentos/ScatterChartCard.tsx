@@ -18,7 +18,6 @@ export default function ScatterChartCard({ title, data }: Props) {
   const padX = hasData ? (maxX - minX) * 0.05 : 0;
   const padY = hasData ? (maxY - minY) * 0.05 : 0;
 
-  // Build nice rounded ticks for Y axis (e.g., 75.000 instead of 75.245)
   const niceNum = (range: number, round: boolean) => {
     if (range <= 0 || !isFinite(range)) return 1;
     const exponent = Math.floor(Math.log10(range));
