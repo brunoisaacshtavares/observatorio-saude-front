@@ -111,7 +111,15 @@ export default function Dashboard() {
             disableInteractions
           />
         )}
-        <InteractiveMap />
+        
+        <div className="card p-4 flex flex-col">
+          <h1 className="text-sm font-medium text-slate-700 mb-4">
+            Mapa de Distribuição Nacional
+          </h1>
+          <div className="flex-grow">
+            <InteractiveMap />
+          </div>
+        </div>
       </section>
 
       {}
