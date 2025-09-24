@@ -76,7 +76,7 @@ export default function InteractiveMap() {
         {geoJsonData?.features && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
            <MarkerClusterGroup 
             key={mapInfo.bounds?.toBBoxString()}
-            maxClusterRadius={10}
+            maxClusterRadius={20}
            >
             {geoJsonData.features.map((feature) => {
               
