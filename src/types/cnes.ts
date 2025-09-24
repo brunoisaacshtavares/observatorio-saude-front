@@ -1,3 +1,5 @@
+import type { LatLngBounds } from "leaflet";
+
 export type EstabelecimentoItem = {
   codCnes: number;
   dataExtracao: string;
@@ -66,3 +68,27 @@ export type ContagemPorEstado = {
 export type ContagemTotal = {
   totalEstabelecimentos: number;
 };
+
+export interface GeoJsonFeature {
+  type: "Feature";
+  geometry: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  properties: {
+    nome: string;
+    endereco: string;
+    bairro: string;
+    cep: number
+  };
+}
+
+export interface GeoJsonFeatureCollection {
+  type: "FeatureCollection";
+  features: GeoJsonFeature[];
+}
+
+export interface GeoJsonParams {
+  uf?: string;
+  bounds?: LatLngBounds;
+}

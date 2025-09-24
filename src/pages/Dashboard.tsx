@@ -5,7 +5,7 @@ import { Building2, Bed, TrendingUp, TrendingDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber } from "../utils/formatters";
 import RankingBarChart from "../components/estabelecimentos/RankingBarChart";
-import MapPlaceHolder from "../components/map/MapPlaceHolder";
+import InteractiveMap from "../components/map/InteractiveMap";
 import UpdatesList from "../components/news/UpdatesList";
 import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
 import { getRegionColor } from "../utils/colors";
@@ -111,7 +111,7 @@ export default function Dashboard() {
             disableInteractions
           />
         )}
-        <MapPlaceHolder />
+        <InteractiveMap />
       </section>
 
       {}

@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { ContagemPorEstado, ContagemTotal, EstabelecimentoItem, Paginado } from "../types/cnes";
+import type { ContagemPorEstado, ContagemTotal, EstabelecimentoItem, GeoJsonFeatureCollection, GeoJsonParams, Paginado } from "../types/cnes";
 import { UF_METADATA } from "../utils/formatters";
 
 export async function getTotalEstabelecimentosPorEstado() {
@@ -66,3 +66,18 @@ export async function getEstabelecimentosPorUFPage(ufSigla: string, page: number
 }
 
 const ufPageCache = new Map<string, UFPageResult>();
+
+export const getEstabelecimentosGeoJson = async ({ bounds }: GeoJsonParams): Promise<GeoJsonFeatureCollection> => {
+  const params = new URLSearchParams();
+
+  if (bounds) {
+    params.append('MinLatitude', bounds.getSouth().toString());
+    params.append('MaxLatitude', bounds.getNorth().toString());
+    params.append('MinLongitude', bounds.getWest().toString());
+    params.append('MaxLongitude', bounds.getEast().toString());
+  }
+
+  const endpoint = `/api/v1/Estabelecimento/geojson?${params.toString()}`;
+  const { data } = await api.get<GeoJsonFeatureCollection>(endpoint);
+  return data;
+};
