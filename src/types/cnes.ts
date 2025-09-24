@@ -91,4 +91,5 @@ export interface GeoJsonFeatureCollection {
 export interface GeoJsonParams {
   uf?: string;
   bounds?: LatLngBounds;
+  zoom : number
 }

@@ -1,22 +1,18 @@
-// src/components/map/InteractiveMap.tsx
-
 import { useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
-import { LatLngBounds, Layer, type LatLngExpression } from 'leaflet';
+import { LatLngBounds, type LatLngExpression } from 'leaflet';
 import L from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import MarkerClusterGroup from 'react-leaflet-cluster'; 
 import { getEstabelecimentosGeoJson } from '../../services/establishments';
-import type { GeoJsonFeature } from '../../types/cnes';
 
-const DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconAnchor: [12, 41],
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconUrl: '/images/marker-icon.png',
+    iconRetinaUrl: '/images/marker-icon-2x.png',
+    shadowUrl: '/images/shadow.png',
 });
 
-L.Marker.prototype.options.icon = DefaultIcon;
 function MapEventsHandler({ onBoundsChange }: { onBoundsChange: (bounds: LatLngBounds, zoom: number) => void }) {
   const map = useMapEvents({
     moveend: () => {
@@ -26,48 +22,32 @@ function MapEventsHandler({ onBoundsChange }: { onBoundsChange: (bounds: LatLngB
   return null;
 }
 
+const formatCep = (cep: string | number): string => {
+  if (!cep) return '';
+  const cepStr = cep.toString().padStart(8, '0');
+  return `${cepStr.slice(0, 5)}-${cepStr.slice(5, 8)}`;
+};
+
 export default function InteractiveMap() {
+  const ZOOM_LEVEL_TO_FETCH = 7;
   const [mapInfo, setMapInfo] = useState<{ bounds: LatLngBounds | null; zoom: number }>({ bounds: null, zoom: 4 });
-  const ZOOM_LEVEL_TO_FETCH = 9;
+  
   const { 
     data: geoJsonData, 
-    isLoading,
     isFetching,
     isError 
   } = useQuery({
     queryKey: ['geojson-estabelecimentos', mapInfo.bounds?.toBBoxString()],
-    queryFn: () => getEstabelecimentosGeoJson({ bounds: mapInfo.bounds! }),
+    queryFn: () => getEstabelecimentosGeoJson({ bounds: mapInfo.bounds!, zoom: mapInfo.zoom }),
     enabled: !!mapInfo.bounds && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH,
-    staleTime: Infinity, 
+    staleTime: 1000 * 60 * 5,
   });
 
   const handleBoundsChange = (bounds: LatLngBounds, zoom: number) => {
     setMapInfo({ bounds, zoom });
   };
-
-  const formatCep = (cep: string | number): string => {
-    if (!cep) return '';
-    const cepStr = cep.toString().padStart(8, '0');
-    return `${cepStr.slice(0, 5)}-${cepStr.slice(5, 8)}`;
-  };
   
   const initialPosition: LatLngExpression = [-14.235, -51.925];
-  const onEachFeature = (feature: GeoJsonFeature, layer: Layer) => {
-    if (feature.properties && feature.properties.nome) {
-      const { nome, endereco, bairro, cep } = feature.properties;
-
-      const contentLines = [
-        `<strong>${nome}</strong>`,
-        `<hr style="margin: 4px 0; border: none; border-top: 1px solid #ddd;" />`,
-        endereco,
-        bairro ? `Bairro: ${bairro}` : null,
-        cep ? `CEP: ${formatCep(cep)}` : null,
-      ];
-      const popupContent = contentLines.filter(line => line).join('<br/>');
-
-      layer.bindPopup(popupContent);
-    }
-  };
 
   if (isError) {
      return <div className="card p-4 text-sm text-red-600">Erro ao carregar dados do mapa.</div>;
@@ -75,7 +55,7 @@ export default function InteractiveMap() {
 
   return (
     <div className="card h-96 overflow-hidden rounded-lg relative">
-      {(isLoading || isFetching) && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
+      {(isFetching) && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
         <div className="absolute top-2 right-2 z-[1000] bg-white bg-opacity-80 p-2 rounded-md shadow-md text-sm animate-pulse">
           Buscando dados...
         </div>
@@ -88,18 +68,48 @@ export default function InteractiveMap() {
 
       <MapContainer center={initialPosition} zoom={4} style={{ height: '100%', width: '100%' }}>
         <MapEventsHandler onBoundsChange={handleBoundsChange} />
-        
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
-        {geoJsonData && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
-            <GeoJSON 
-                key={mapInfo.bounds?.toBBoxString()}
-                data={geoJsonData} 
-                onEachFeature={onEachFeature} 
-            />
+        {geoJsonData?.features && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
+           <MarkerClusterGroup 
+            key={mapInfo.bounds?.toBBoxString()}
+            maxClusterRadius={10}
+           >
+            {geoJsonData.features.map((feature) => {
+              
+              const longitude = feature.geometry.coordinates[0];
+              const latitude = feature.geometry.coordinates[1];
+              const { properties } = feature;
+              const uniqueKey = `${latitude}-${longitude}`;
+
+              return (
+                <Marker key={uniqueKey} position={[latitude, longitude]}>
+                  <Popup>
+                    <div>
+                      <strong>{properties.nome}</strong>
+                      <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #ddd' }} />
+                      {properties.endereco}
+                      {properties.bairro && (
+                        <>
+                          <br />
+                          Bairro: {properties.bairro}
+                        </>
+                      )}                  
+                      {properties.cep && (
+                        <>
+                          <br />
+                          CEP: {formatCep(properties.cep)}
+                        </>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MarkerClusterGroup>
         )}
       </MapContainer>
     </div>

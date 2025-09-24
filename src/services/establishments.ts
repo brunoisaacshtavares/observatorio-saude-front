@@ -67,7 +67,7 @@ export async function getEstabelecimentosPorUFPage(ufSigla: string, page: number
 
 const ufPageCache = new Map<string, UFPageResult>();
 
-export const getEstabelecimentosGeoJson = async ({ bounds }: GeoJsonParams): Promise<GeoJsonFeatureCollection> => {
+export const getEstabelecimentosGeoJson = async ({ bounds, zoom }: GeoJsonParams): Promise<GeoJsonFeatureCollection> => {
   const params = new URLSearchParams();
 
   if (bounds) {
@@ -75,6 +75,7 @@ export const getEstabelecimentosGeoJson = async ({ bounds }: GeoJsonParams): Pro
     params.append('MaxLatitude', bounds.getNorth().toString());
     params.append('MinLongitude', bounds.getWest().toString());
     params.append('MaxLongitude', bounds.getEast().toString());
+    params.append('Zoom', zoom.toString());
   }
 
   const endpoint = `/api/v1/Estabelecimento/geojson?${params.toString()}`;
