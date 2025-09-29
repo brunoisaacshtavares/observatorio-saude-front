@@ -4,18 +4,13 @@ import StatCard from "../components/cards/StatCard";
 import { Building2, Bed, TrendingUp, TrendingDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber } from "../utils/formatters";
-import RankingBarChart from "../components/estabelecimentos/RankingBarChart";
 import InteractiveMap from "../components/map/InteractiveMap";
+import ChoroplethMap from "../components/map/ChoroplethMap";
 import UpdatesList from "../components/news/UpdatesList";
 import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
-import { getRegionColor } from "../utils/colors";
 
 export default function Dashboard() {
-  const {
-    data: ufCounts,
-    isLoading: isLoadingUfs,
-    isError: isErrorUfs,
-  } = useQuery({
+  const { data: ufCounts, isLoading: isLoadingUfs, isError: isErrorUfs } = useQuery({
     queryKey: ["estabelecimentos-por-estado"],
     queryFn: () => getTotalEstabelecimentosPorEstado(),
     select: (data) => {
@@ -32,23 +27,24 @@ export default function Dashboard() {
         .sort((a, b) => b.qty - a.qty);
     },
   });
-
-  const {
-    data: totalData,
-    isLoading: isLoadingTotal,
-    isError: isErrorTotal,
-  } = useQuery({
+  
+  const { data: totalData, isLoading: isLoadingTotal, isError: isErrorTotal } = useQuery({
     queryKey: ["contagem-total"],
     queryFn: () => getTotalEstabelecimentos(),
   });
 
+  const stateChoroplethData = React.useMemo(() => {
+    if (!ufCounts) return [];
+    return ufCounts.map(state => ({
+      uf: state.sigla,
+      valor: state.cobertura,
+      regiao: state.regiao
+    }));
+  }, [ufCounts]);
+
   const { melhorCobertura, piorCobertura } = React.useMemo(() => {
-    if (!ufCounts || !Array.isArray(ufCounts) || ufCounts.length === 0) {
-      return { melhorCobertura: null, piorCobertura: null };
-    }
-
+    if (!ufCounts) return { melhorCobertura: null, piorCobertura: null };
     const sortedData = [...ufCounts].sort((a, b) => a.cobertura - b.cobertura);
-
     return {
       piorCobertura: sortedData[0],
       melhorCobertura: sortedData[sortedData.length - 1],
@@ -80,49 +76,46 @@ export default function Dashboard() {
     <div className="space-y-4">
       <Header />
 
-      {}
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard label="Total de Estabelecimentos" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalData?.totalEstabelecimentos ?? 0)} icon={<Building2 />} iconBgClass="bg-[#004F6D]" hint="Cadastrados no CNES" />
-
         <StatCard label="Total de Leitos" value="—" hint="Aguardando endpoint de leitos" icon={<Bed />} iconBgClass="bg-[#00A67D]" />
-
-        <StatCard label="Melhor Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : melhorCobertura?.nome ?? "N/A"} icon={<TrendingUp />} iconBgClass="bg-[#22C55E]" hint={melhorCobertura ? `${melhorCobertura.cobertura.toFixed(1)} por 100k hab.` : isLoadingUfs ? "" : "Sem dados"} />
-
-        <StatCard label="Pior Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : piorCobertura?.nome ?? "N/A"} icon={<TrendingDown />} iconBgClass="bg-amber-400" hint={piorCobertura ? `${piorCobertura.cobertura.toFixed(1)} por 100k hab.` : isLoadingUfs ? "" : "Sem dados"} />
+        <StatCard label="Melhor Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : melhorCobertura?.nome ?? "N/A"} icon={<TrendingUp />} iconBgClass="bg-[#22C55E]" hint={melhorCobertura ? `${melhorCobertura.cobertura.toFixed(1)} por 100k hab.` : ""} />
+        <StatCard label="Pior Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : piorCobertura?.nome ?? "N/A"} icon={<TrendingDown />} iconBgClass="bg-amber-400" hint={piorCobertura ? `${piorCobertura.cobertura.toFixed(1)} por 100k hab.` : ""} />
       </section>
 
-      {}
-      <section className="grid gap-4 lg:grid-cols-2">
-        {isLoadingUfs ? (
-          <div className="card p-4 text-sm text-slate-500">Carregando…</div>
-        ) : isErrorUfs ? (
-          <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
-        ) : (
-          <RankingBarChart
-            title="Estados com Maior Número de Estabelecimentos"
-            data={(ufCounts || []).slice(0, 10).map((s: any) => ({
-              estado: s.nome,
-              uf: s.sigla,
-              regiao: s.regiao,
-              estabelecimentos: s.qty,
-              color: getRegionColor(s.regiao),
-            }))}
-            hideControls
-            disableInteractions
-          />
-        )}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ minHeight: '500px' }}>
         
         <div className="card p-4 flex flex-col">
-          <h1 className="text-sm font-medium text-slate-700 mb-4">
-            Mapa de Distribuição Nacional
-          </h1>
+          <h2 className="text-base font-semibold text-slate-800 mb-1">
+            Cobertura por Estado
+          </h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Análise da cobertura de estabelecimentos por 100 mil habitantes.
+          </p>
+          <div className="flex-grow">
+            <ChoroplethMap
+              data={stateChoroplethData}
+              isLoading={isLoadingUfs}
+              isError={isErrorUfs}
+              min={piorCobertura?.cobertura}
+              max={melhorCobertura?.cobertura}
+            />
+          </div>
+        </div>
+
+        <div className="card p-4 flex flex-col">
+          <h2 className="text-base font-semibold text-slate-800 mb-1">
+            Distribuição de Estabelecimentos
+          </h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Explore os pontos de estabelecimentos de saúde no mapa.
+          </p>
           <div className="flex-grow">
             <InteractiveMap />
           </div>
         </div>
       </section>
 
-      {}
       <section>
         <UpdatesList items={updates} />
       </section>
