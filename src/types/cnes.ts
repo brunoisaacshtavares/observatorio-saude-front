@@ -93,3 +93,9 @@ export interface GeoJsonParams {
   bounds?: LatLngBounds;
   zoom : number
 }
+
+export interface ExportParams {
+  format: 'csv' | 'xlsx';
+  regiao?: string | null;
+  ufs?: string[];
+}

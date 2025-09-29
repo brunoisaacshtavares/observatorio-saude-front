@@ -1,12 +1,13 @@
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { Search } from "lucide-react";
 
 type ButtonSpec = {
-  label: string;
+  label?: string;
   onClick?: () => void;
   icon?: ReactNode;
   variant?: "ghost" | "primary";
   className?: string;
+  component?: ReactNode;
 };
 
 type Props = {
@@ -68,10 +69,12 @@ export default function SearchBar({ value, onChange, onClear, rightButtons = [],
             )}
           </div>
         </div>
-
-        {}
-        <div className="flex gap-2 md:justify-end">
+        
+        <div className="flex items-center gap-2 md:justify-end">
           {rightButtons.map((b, i) => {
+            if (b.component) {
+              return <React.Fragment key={i}>{b.component}</React.Fragment>;
+            }
             const base = b.variant === "primary" ? "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white bg-[#004F6D] hover:opacity-95 transition" : "inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition";
             return (
               <button key={i} onClick={b.onClick} className={`${base} ${b.className ?? ""} overflow-hidden text-ellipsis whitespace-nowrap`}>
