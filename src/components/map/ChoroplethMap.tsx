@@ -62,7 +62,7 @@ export default function ChoroplethMap({ data = [], isLoading = false, isError = 
     <div className='relative w-full h-full'>
       <MapContainer center={[-14.235, -51.9253]} zoom={4} scrollWheelZoom={false} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}>
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <GeoJSON 

@@ -54,8 +54,8 @@ export default function InteractiveMap() {
   }
 
   return (
-    <div className="card h-96 overflow-hidden rounded-lg relative">
-      {(isFetching) && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
+    <div className="w-full h-full rounded-lg overflow-hidden relative">
+      {isFetching && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
         <div className="absolute top-2 right-2 z-[1000] bg-white bg-opacity-80 p-2 rounded-md shadow-md text-sm animate-pulse">
           Buscando dados...
         </div>
@@ -70,7 +70,7 @@ export default function InteractiveMap() {
         <MapEventsHandler onBoundsChange={handleBoundsChange} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
         {geoJsonData?.features && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
