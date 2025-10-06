@@ -1,11 +1,12 @@
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ZAxis, Cell } from "recharts";
+import { forwardRef } from 'react';
 
 type Props = {
   title: string;
   data: { estado: string; regiao?: string; color?: string; populacao: number; estabelecimentos: number }[];
 };
 
-export default function ScatterChartCard({ title, data }: Props) {
+const ScatterChartCard = forwardRef<HTMLDivElement, Props>(({ title, data }, ref) => {
   const enriched = data.map((d) => ({
     ...d,
     z: Math.max(20, Math.min(72, (d.estabelecimentos / 4500) * 72)),
@@ -54,7 +55,7 @@ export default function ScatterChartCard({ title, data }: Props) {
   const yNice = getNiceScale(Math.max(0, minY - padY), maxY + padY, 6);
 
   return (
-    <div className="card p-4">
+    <div className="card p-4" ref={ref}>
       <p className="text-sm font-medium text-slate-700 mb-3">{title}</p>
       <div className="h-80 rounded-lg bg-gradient-to-tr from-slate-50 to-emerald-50">
         <ResponsiveContainer width="100%" height="100%">
@@ -93,4 +94,8 @@ export default function ScatterChartCard({ title, data }: Props) {
       </div>
     </div>
   );
-}
+});
+
+ScatterChartCard.displayName = 'ScatterChartCard';
+
+export default ScatterChartCard;

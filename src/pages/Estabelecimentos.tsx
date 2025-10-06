@@ -6,11 +6,18 @@ import { getRegionColor } from "../utils/colors";
 import StateTable from "../components/estabelecimentos/StateTable";
 import StatGradientCard from "../components/cards/StatGradientCard";
 import { Building2, UsersRound, Filter } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { formatNumber, UF_METADATA } from "../utils/formatters";
 import { useQuery, useQueries } from "@tanstack/react-query";
-import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado, getEstabelecimentosPorUFPage } from "../services/establishments";
+import { 
+  getTotalEstabelecimentos, 
+  getTotalEstabelecimentosPorEstado, 
+  getEstabelecimentosPorUFPage,
+  exportEstabelecimentos
+} from "../services/establishments";
 import { useState as useReactState } from "react";
+import html2canvas from 'html2canvas';
+import ExportButton from "../components/estabelecimentos/ExportButton";
 
 function useUFData() {
   const { data, isLoading, isError } = useQuery({
@@ -94,6 +101,50 @@ export default function Estabelecimentos() {
   const [draftUfs, setDraftUfs] = useReactState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useReactState(false);
   const [sortAsc, setSortAsc] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const rankingChartRef = useRef<HTMLDivElement>(null);
+  const scatterChartRef = useRef<HTMLDivElement>(null);
+
+  const handleExportData = async (format: 'csv' | 'xlsx') => {
+    setIsExporting(true);
+    try {
+      await exportEstabelecimentos({
+        format,
+        ufs: appliedUfs,
+      });
+    } catch (error) {
+      console.error("Falha ao exportar dados:", error);
+      alert("Ocorreu um erro ao gerar o arquivo. Tente novamente.");
+    } finally {
+      setTimeout(() => {
+        setIsExporting(false);
+      }, 500);
+    }
+  };
+
+  const handleExportChart = async (chartRef: React.RefObject<HTMLDivElement | null>, filename: string) => {
+    if (!chartRef.current) {
+      console.error("Erro: Elemento do gráfico não encontrado para exportação.");
+      return;
+    }
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2 
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Falha ao exportar o gráfico como imagem:", error);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -278,6 +329,17 @@ export default function Estabelecimentos() {
                 setAppliedUfs(ufs);
               },
             },
+            {
+              component: (
+                <ExportButton
+                  isLoading={isExporting}
+                  onExportCSV={() => handleExportData('csv')}
+                  onExportExcel={() => handleExportData('xlsx')}
+                  onExportRankingPNG={() => handleExportChart(rankingChartRef, 'ranking_estados_cnes.png')}
+                  onExportScatterPNG={() => handleExportChart(scatterChartRef, 'dispersao_populacao_estabelecimentos.png')}
+                />
+              ),
+            },
           ]}
         />
 
@@ -312,10 +374,8 @@ export default function Estabelecimentos() {
                         setDraftUfs((prev) => {
                           const anyVisibleSelected = prev.some((u) => ufOptions.includes(u));
                           if (anyVisibleSelected) {
-                            // Limpar apenas as UFs visíveis (da região atual)
                             return prev.filter((u) => !ufOptions.includes(u));
                           }
-                          // Selecionar todas as UFs visíveis (todas do BR se sem região)
                           const merged = Array.from(new Set([...prev, ...ufOptions]));
                           return merged;
                         });
@@ -371,8 +431,6 @@ export default function Estabelecimentos() {
                   onClick={() => {
                     setSelectedRegiao(draftRegiao);
                     setSelectedUfs(draftUfs);
-                    // mostrar imediatamente nos chips
-                    // (os dados aplicados continuam sendo controlados por "Filtrar")
                     setIsFilterOpen(false);
                   }}
                 >
@@ -391,33 +449,31 @@ export default function Estabelecimentos() {
           ) : isError ? (
             <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
           ) : (
-            <>
-              <RankingBarChart
-                title="Ranking de Estados por Número de Estabelecimentos"
-                data={filtered.map((s) => ({
-                  estado: s.estado,
-                  uf: s.uf,
-                  regiao: s.regiao,
-                  color: getRegionColor(s.regiao),
-                  estabelecimentos: s.estabelecimentos,
-                }))}
-                asc={sortAsc}
-                onToggleAsc={() => setSortAsc((v) => !v)}
-                onBarClick={({ uf, estado }) => {
-                  const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
-                  if (!resolvedUf) return;
-                  setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
-                  setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
-                  const section = document.getElementById("detalhes-por-estado");
-                  if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
-                  setTimeout(() => {
-                    const row = document.getElementById(`state-row-${resolvedUf}`);
-                    if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }, 250);
-                }}
-              />
-              {/* legenda movida para dentro do RankingBarChart */}
-            </>
+            <RankingBarChart
+              ref={rankingChartRef}
+              title="Ranking de Estados por Número de Estabelecimentos"
+              data={filtered.map((s) => ({
+                estado: s.estado,
+                uf: s.uf,
+                regiao: s.regiao,
+                color: getRegionColor(s.regiao),
+                estabelecimentos: s.estabelecimentos,
+              }))}
+              asc={sortAsc}
+              onToggleAsc={() => setSortAsc((v) => !v)}
+              onBarClick={({ uf, estado }) => {
+                const resolvedUf = uf ?? filtered.find((f) => f.estado === estado)?.uf;
+                if (!resolvedUf) return;
+                setOpenUFs((prev) => (prev.includes(resolvedUf) ? prev : [...prev, resolvedUf]));
+                setUfPageByUF((prev) => ({ ...prev, [resolvedUf]: 1 }));
+                const section = document.getElementById("detalhes-por-estado");
+                if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+                setTimeout(() => {
+                  const row = document.getElementById(`state-row-${resolvedUf}`);
+                  if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 250);
+              }}
+            />
           )}
 
           {isLoading ? (
@@ -426,6 +482,7 @@ export default function Estabelecimentos() {
             <div className="card p-4 text-sm text-red-600">Erro ao carregar dados.</div>
           ) : (
             <ScatterChartCard
+              ref={scatterChartRef}
               title="Relação População x Estabelecimentos"
               data={filtered.map((s) => ({
                 estado: s.estado,
