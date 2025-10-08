@@ -1,5 +1,4 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { getRegionColor } from "../../utils/colors";
 
 type BedsCapacityData = {
   uf: string;
