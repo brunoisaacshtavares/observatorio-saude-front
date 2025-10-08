@@ -28,11 +28,11 @@ export default function BedsPer1000Chart({ data, isLoading = false }: Props) {
   return (
     <div className="card p-5">
       <h3 className="text-base font-semibold text-slate-900 mb-4">Leitos por 1000 Habitantes</h3>
-      <div className="h-64">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={sortedData} margin={{ top: 10, right: 10, left: 10, bottom: 30 }}>
+          <BarChart data={sortedData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="uf" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" height={60} />
+            <XAxis dataKey="uf" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 11 }} domain={[0, "dataMax + 0.5"]} tickFormatter={(value) => value.toFixed(1)} />
             <Tooltip
               formatter={(value: number) => [value.toFixed(2), "Leitos/1000 hab."]}
@@ -51,7 +51,7 @@ export default function BedsPer1000Chart({ data, isLoading = false }: Props) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex items-center justify-center mt-3">
+      <div className="flex items-center justify-center mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-[#FFD166] rounded" />
           <span className="text-xs text-slate-600">Leitos por 1000 habitantes</span>
