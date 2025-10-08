@@ -63,6 +63,7 @@ export default function HospitaisLeitos() {
   }, [stateData]);
 
   const [page, setPage] = useState(1);
+  const [selectedUf, setSelectedUf] = useState<string | undefined>(undefined);
   const pageSize = 30;
   const queryClient = useQueryClient();
 
@@ -71,8 +72,8 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingLeitos,
     error: leitosError,
   } = useQuery({
-    queryKey: ["leitos", { page, pageSize }],
-    queryFn: () => getLeitosPage({ pageNumber: page, pageSize }),
+    queryKey: ["leitos", { page, pageSize, selectedUf }],
+    queryFn: () => getLeitosPage({ pageNumber: page, pageSize, ufs: selectedUf ? [selectedUf] : undefined }),
     placeholderData: (prev) => prev,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -124,20 +125,29 @@ export default function HospitaisLeitos() {
 
     if (!totalPages || nextPage <= totalPages) {
       queryClient.prefetchQuery({
-        queryKey: ["leitos", { page: nextPage, pageSize }],
-        queryFn: () => getLeitosPage({ pageNumber: nextPage, pageSize }),
+        queryKey: ["leitos", { page: nextPage, pageSize, selectedUf }],
+        queryFn: () => getLeitosPage({ pageNumber: nextPage, pageSize, ufs: selectedUf ? [selectedUf] : undefined }),
         staleTime: 60 * 1000,
       });
     }
 
     if (prevPage >= 1) {
       queryClient.prefetchQuery({
-        queryKey: ["leitos", { page: prevPage, pageSize }],
-        queryFn: () => getLeitosPage({ pageNumber: prevPage, pageSize }),
+        queryKey: ["leitos", { page: prevPage, pageSize, selectedUf }],
+        queryFn: () => getLeitosPage({ pageNumber: prevPage, pageSize, ufs: selectedUf ? [selectedUf] : undefined }),
         staleTime: 60 * 1000,
       });
     }
-  }, [page, pageSize, leitosPage?.totalPages, queryClient]);
+  }, [page, pageSize, leitosPage?.totalPages, selectedUf, queryClient]);
+
+  // Reset pagination when UF changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedUf]);
+
+  const ufOptions = useMemo(() => {
+    return stateData.map((s) => ({ value: s.uf, label: `${s.uf} - ${s.estado}` })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [stateData]);
 
   return (
     <div className="space-y-6">
@@ -172,7 +182,7 @@ export default function HospitaisLeitos() {
 
       {}
       <div className="grid gap-4 lg:grid-cols-2">
-        <HospitalsList hospitals={hospitals} isLoading={isLoadingLeitos} page={page} totalPages={leitosPage?.totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(leitosPage?.totalPages || p + 1, p + 1))} />
+        <HospitalsList hospitals={hospitals} isLoading={isLoadingLeitos} page={page} totalPages={leitosPage?.totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(leitosPage?.totalPages || p + 1, p + 1))} ufOptions={ufOptions} selectedUf={selectedUf} onChangeUf={(uf) => setSelectedUf(uf)} />
         <RegionalAnalysis data={regionalData} isLoading={isLoadingRegional} />
       </div>
 

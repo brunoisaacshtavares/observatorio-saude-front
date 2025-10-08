@@ -10,6 +10,8 @@ type Hospital = {
   percentualOcupacao: number;
 };
 
+type UfOption = { value: string; label: string };
+
 type Props = {
   hospitals: Hospital[];
   isLoading?: boolean;
@@ -17,9 +19,12 @@ type Props = {
   totalPages?: number;
   onPrev?: () => void;
   onNext?: () => void;
+  ufOptions?: UfOption[];
+  selectedUf?: string;
+  onChangeUf?: (uf?: string) => void;
 };
 
-export default function HospitalsList({ hospitals, isLoading = false, page, totalPages, onPrev, onNext }: Props) {
+export default function HospitalsList({ hospitals, isLoading = false, page, totalPages, onPrev, onNext, ufOptions = [], selectedUf, onChangeUf }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -51,7 +56,10 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
   if (isLoading) {
     return (
       <div className="card p-5">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">Principais Hospitais</h3>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-slate-900">Principais Hospitais</h3>
+          <div className="h-8 w-40 bg-slate-100 rounded" />
+        </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
@@ -65,7 +73,22 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
 
   return (
     <div className="card p-5">
-      <h3 className="text-base font-semibold text-slate-900 mb-4">Principais Hospitais</h3>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-900">Principais Hospitais</h3>
+        <div className="flex items-center gap-2">
+          <label htmlFor="uf-select" className="text-xs text-slate-600 whitespace-nowrap">
+            UF
+          </label>
+          <select id="uf-select" className="border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200" value={selectedUf ?? ""} onChange={(e) => onChangeUf?.(e.target.value || undefined)}>
+            <option value="">Todos (BR)</option>
+            {ufOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div ref={listRef} className="space-y-3 max-h-96 overflow-y-auto">
         {hospitals.map((hospital) => (
