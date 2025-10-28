@@ -41,13 +41,15 @@ export type LeitoItem = {
 };
 
 export type BedsByRegion = {
-  regiao: string;
-  totalLeitos: number;
-  leitosDisponiveis: number;
-  leitosOcupados: number;
-  ocupacaoMedia: number;
-  criticos: number;
-};
+  nomeRegiao: string
+  populacao: number
+  totalLeitos: number
+  leitosDisponiveis: number
+  criticos: number
+  ocupacaoMedia: number
+  coberturaLeitosPor1kHab: number
+}
+
 
 export type BedType = {
   id: string;

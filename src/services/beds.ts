@@ -1,8 +1,16 @@
 import { api } from "./api";
-import type { BedsIndicators, BedsByState, TopBedsHospital, LeitoItem } from "../types/leitos";
+import type { BedsIndicators, BedsByState, TopBedsHospital, LeitoItem, BedsByRegion } from "../types/leitos";
 
-export async function getBedsIndicators(year: number) {
-  const { data } = await api.get<BedsIndicators>(`/api/v1/Leitos/indicadores?Ano=${encodeURIComponent(String(year))}`);
+export async function getBedsIndicators(params: { year: number; tipoLeito?: string }) {
+  const search = new URLSearchParams();
+  search.append("Ano", String(params.year));
+
+  if (params.tipoLeito) {
+    search.append("Tipo", params.tipoLeito);
+  }
+
+  const qs = search.toString();
+  const { data } = await api.get<BedsIndicators>(`/api/v1/Leitos/indicadores?${qs}`);
   return data;
 }
 
@@ -82,4 +90,17 @@ export async function getAllLeitos(params: { ufs?: string[]; pageSize?: number; 
   }
 
   return items;
+}
+
+export async function getBedsByRegion(params: { year: number; tipoLeito?: string }) {
+  const search = new URLSearchParams();
+  search.append("Ano", String(params.year));
+
+  if (params.tipoLeito) {
+    search.append("Tipo", params.tipoLeito);
+  }
+
+  const qs = search.toString();
+  const { data } = await api.get<BedsByRegion[]>(`/api/v1/Leitos/indicadores-por-regiao?${qs}`);
+  return data;
 }
