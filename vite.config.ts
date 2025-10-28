@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         "/api": {
-          target: env.VITE_API_URL || "https://observatorio-saude-production-1015.up.railway.app",
+          target: env.VITE_API_URL || "https://obeservatorio-saude-api-165421927123.southamerica-east1.run.app",
           changeOrigin: true,
           secure: true,
         },

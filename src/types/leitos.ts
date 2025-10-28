@@ -29,7 +29,6 @@ export type TopBedsHospital = {
   codCnes: number;
 };
 
-// Minimal shape for the Leitos endpoint items used for occupancy calculations
 export type LeitoItem = {
   codCnes?: number;
   nomeEstabelecimento?: string;
@@ -38,4 +37,19 @@ export type LeitoItem = {
   totalLeitos?: number;
   leitosDisponiveis?: number;
   porcentagemOcupacao: number;
+  tipoLeito?: string;
+};
+
+export type BedsByRegion = {
+  regiao: string;
+  totalLeitos: number;
+  leitosDisponiveis: number;
+  leitosOcupados: number;
+  ocupacaoMedia: number;
+  criticos: number;
+};
+
+export type BedType = {
+  id: string;
+  label: string;
 };

@@ -43,7 +43,7 @@ export type LeitosPage = {
   totalPages: number;
 };
 
-export async function getLeitosPage(params: { pageNumber?: number; pageSize?: number; ufs?: string[] }) {
+export async function getLeitosPage(params: { pageNumber?: number; pageSize?: number; ufs?: string[]; tipoLeito?: string }) {
   const search = new URLSearchParams();
   // Leitos endpoint expects capitalized param names
   if (params.pageNumber !== undefined) search.append("PageNumber", String(params.pageNumber));
@@ -51,6 +51,9 @@ export async function getLeitosPage(params: { pageNumber?: number; pageSize?: nu
   if (params.ufs && params.ufs.length > 0) {
     // API expects multiple Uf entries or a single Uf? Provided curl shows Uf with quoted CSV; we'll send multiple Uf entries for safety
     params.ufs.forEach((uf) => search.append("Uf", uf));
+  }
+  if (params.tipoLeito) {
+    search.append("Tipo", params.tipoLeito); // Nome correto do parâmetro é "Tipo"
   }
   const qs = search.toString();
   const { data } = await api.get<string | LeitosPage>(`/api/v1/Leitos?${qs}`, { headers: { accept: "text/plain" } });
@@ -64,7 +67,7 @@ export async function getLeitosPage(params: { pageNumber?: number; pageSize?: nu
   return data as LeitosPage;
 }
 
-export async function getAllLeitos(params: { ufs?: string[]; pageSize?: number; maxPages?: number }) {
+export async function getAllLeitos(params: { ufs?: string[]; pageSize?: number; maxPages?: number; tipoLeito?: string }) {
   const pageSize = params.pageSize ?? 100;
   const maxPages = params.maxPages ?? 200; // safety cap
   let page = 1;
@@ -72,7 +75,7 @@ export async function getAllLeitos(params: { ufs?: string[]; pageSize?: number; 
   const items: LeitoItem[] = [];
 
   while (page <= totalPages && page <= maxPages) {
-    const resp = await getLeitosPage({ pageNumber: page, pageSize, ufs: params.ufs });
+    const resp = await getLeitosPage({ pageNumber: page, pageSize, ufs: params.ufs, tipoLeito: params.tipoLeito });
     items.push(...(resp.items || []));
     totalPages = resp.totalPages || 1;
     page += 1;
