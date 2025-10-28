@@ -193,7 +193,7 @@ export default function HospitaisLeitos() {
         <BedsStatCard label="Total de Leitos" value={overview?.totalLeitos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={isLoadingOverview} />
         <BedsStatCard label="Leitos Disponíveis" value={overview?.leitosDisponiveis ?? 0} sublabel="Prontos para uso" icon={<CheckCircle />} iconColor="green" isLoading={isLoadingOverview} />
         <BedsStatCard label="Ocupação Média" value={`${overview?.ocupacaoMedia ?? 0}%`} sublabel={selectedBedType ? "Do tipo selecionado" : "Taxa nacional"} icon={<Activity />} iconColor="yellow" isLoading={isLoadingOverview} />
-        <BedsStatCard label="Críticos" value={overview?.criticos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "UTI e emergência"} icon={<AlertCircle />} iconColor="red" isLoading={isLoadingOverview} />
+        <BedsStatCard label="Críticos" value={overview?.criticos ?? 0} sublabel={"UTI e emergência"} icon={<AlertCircle />} iconColor="red" isLoading={isLoadingOverview} />
       </div>
 
       <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
