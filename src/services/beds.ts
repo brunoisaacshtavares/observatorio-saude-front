@@ -14,11 +14,15 @@ export async function getBedsIndicators(params: { year: number; tipoLeito?: stri
   return data;
 }
 
-export async function getBedsByState(year: number, ufs?: string[]) {
+export async function getBedsByState(year: number, ufs?: string[], tipoLeito?: string) {
   const params = new URLSearchParams();
   params.append("Ano", String(year));
   if (ufs && ufs.length > 0) {
     ufs.forEach((uf) => params.append("Ufs", uf));
+  }
+
+  if (tipoLeito) {
+    params.append("Tipo", tipoLeito);
   }
   const qs = params.toString();
   const { data } = await api.get<BedsByState[]>(`/api/v1/Leitos/indicadores-por-estado?${qs}`);

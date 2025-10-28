@@ -11,6 +11,7 @@ type RegionalData = {
 type Props = {
   data: RegionalData[];
   isLoading?: boolean;
+  isFiltered?: boolean
 };
 
 const regionIcons = {
@@ -21,7 +22,7 @@ const regionIcons = {
   Sul: "S",
 };
 
-export default function RegionalAnalysis({ data, isLoading = false }: Props) {
+export default function RegionalAnalysis({ data, isLoading = false, isFiltered = false }: Props) {
   if (isLoading) {
     return (
       <div className="card p-5">
@@ -53,7 +54,7 @@ export default function RegionalAnalysis({ data, isLoading = false }: Props) {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-sm font-semibold text-slate-900">{region.regiao}</h4>
-                <span className="text-sm font-bold text-[#004F6D]">{region.leitosPor1000.toFixed(2)} leitos/1000 hab</span>
+                <span className="text-sm font-bold text-[#004F6D]">{!isFiltered && `${region.leitosPor1000.toFixed(2)} leitos/1000 hab`}</span>
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-600">
