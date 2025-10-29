@@ -6,7 +6,7 @@ import BedsPer1000Chart from "../components/leitos/BedsPer1000Chart";
 import HospitalsList from "../components/leitos/HospitalsList";
 import RegionalAnalysis from "../components/leitos/RegionalAnalysis";
 import BedTypeFilter from "../components/leitos/BedTypeFilter";
-import { Bed, AlertCircle, CheckCircle, Ambulance } from "lucide-react";
+import { Bed, AlertCircle, Ambulance } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBedsByState, getBedsIndicators, getLeitosPage, getBedsByRegion } from "../services/beds";
 import type { LeitoItem } from "../types/leitos";
