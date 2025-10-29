@@ -37,7 +37,7 @@ export default function BedsCapacityChart({ data, isLoading = false }: Props) {
             <XAxis dataKey="uf" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => (value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value)} />
             <Tooltip
-              formatter={(value: number, name: string) => [value.toLocaleString("pt-BR"), name === "total" ? "Total de Leitos" : "Leitos Sus"]}
+              formatter={(value: number, name: string) => [value.toLocaleString("pt-BR"), name === "total" ? "Total de Leitos" : "Leitos SUS"]}
               labelFormatter={(label) => {
                 const item = sortedData.find((d) => d.uf === label);
                 return item ? item.estado : label;
@@ -61,7 +61,7 @@ export default function BedsCapacityChart({ data, isLoading = false }: Props) {
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-[#00A67D] rounded" />
-          <span className="text-xs text-slate-600">Leitos Sus</span>
+          <span className="text-xs text-slate-600">Leitos SUS</span>
         </div>
       </div>
     </div>

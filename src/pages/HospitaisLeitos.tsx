@@ -145,7 +145,7 @@ export default function HospitaisLeitos() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <BedsStatCard label="Total de Leitos" value={overview?.totalLeitos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={isLoadingOverview} />
-        <BedsStatCard label="Leitos Sus" value={overview?.leitosSus ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Ambulance />} iconColor="green" isLoading={isLoadingOverview} />
+        <BedsStatCard label="Leitos SUS" value={overview?.leitosSus ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Ambulance />} iconColor="green" isLoading={isLoadingOverview} />
         <BedsStatCard label="Críticos" value={overview?.criticos ?? 0} sublabel={"UTI e emergência"} icon={<AlertCircle />} iconColor="red" isLoading={isLoadingOverview} />
       </div>
 
