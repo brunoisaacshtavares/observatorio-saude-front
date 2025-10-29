@@ -1,4 +1,4 @@
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 type Hospital = {
@@ -6,8 +6,7 @@ type Hospital = {
   nome: string;
   localizacao: string;
   leitosTotal: number;
-  leitosDisponiveis: number;
-  percentualOcupacao: number;
+  leitosSus: number;
 };
 
 type UfOption = { value: string; label: string };
@@ -32,26 +31,6 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
       listRef.current.scrollTop = 0;
     }
   }, [page]);
-  const getOccupancyColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-red-500";
-    if (percentage >= 80) return "bg-orange-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const getProgressBarColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-red-500";
-    if (percentage >= 80) return "bg-orange-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const getPercentageTextColor = (percentage: number) => {
-    if (percentage >= 90) return "text-red-600";
-    if (percentage >= 80) return "text-orange-600";
-    if (percentage >= 60) return "text-yellow-600";
-    return "text-green-600";
-  };
 
   if (isLoading) {
     return (
@@ -103,28 +82,10 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
               </div>
 
               <div className="flex items-center gap-2">
-                {hospital.percentualOcupacao >= 80 && <AlertTriangle size={16} className="text-orange-500" />}
-                <div className={`px-2 py-1 rounded-full ${getOccupancyColor(hospital.percentualOcupacao)} bg-opacity-10`}>
-                  <span className={`text-sm font-bold ${getPercentageTextColor(hospital.percentualOcupacao)}`}>{hospital.percentualOcupacao}%</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">Leitos: {hospital.leitosTotal}</span>
+                  <span className="text-sm font-bold">Leitos Sus: {hospital.leitosSus}</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600">Ocupação</span>
-                <span className="text-slate-900 font-medium">
-                  {hospital.leitosTotal - hospital.leitosDisponiveis} / {hospital.leitosTotal} leitos
-                </span>
-              </div>
-
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div className={`h-full transition-all duration-300 ${getProgressBarColor(hospital.percentualOcupacao)}`} style={{ width: `${hospital.percentualOcupacao}%` }} />
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Disponíveis: {hospital.leitosDisponiveis}</span>
-                <span className="text-slate-500">Total: {hospital.leitosTotal}</span>
               </div>
             </div>
           </div>
