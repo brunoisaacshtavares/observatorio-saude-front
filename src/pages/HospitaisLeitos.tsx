@@ -6,13 +6,16 @@ import BedsPer1000Chart from "../components/leitos/BedsPer1000Chart";
 import HospitalsList from "../components/leitos/HospitalsList";
 import RegionalAnalysis from "../components/leitos/RegionalAnalysis";
 import BedTypeFilter from "../components/leitos/BedTypeFilter";
+import YearFilter from "../components/leitos/YearFilter";
+import MonthFilter from "../components/leitos/MonthFilter";
 import { Bed, AlertCircle, Ambulance } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBedsByState, getBedsIndicators, getLeitosPage, getBedsByRegion } from "../services/beds";
 import type { LeitoItem } from "../types/leitos";
 
 export default function HospitaisLeitos() {
-  const year = 2025; // Ano fixo para consultas
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedBedType, setSelectedBedType] = useState<string>("");
 
   const {
@@ -20,10 +23,11 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingOverview,
     error: overviewError,
   } = useQuery({
-    queryKey: ["beds-indicators", year, selectedBedType],
+    queryKey: ["beds-indicators", selectedYear, selectedMonth, selectedBedType],
     queryFn: () =>
       getBedsIndicators({
-        year,
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
         tipoLeito: selectedBedType || undefined,
       }),
   });
@@ -33,8 +37,8 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingState,
     error: byStateError,
   } = useQuery({
-    queryKey: ["beds-by-state", year, selectedBedType],
-    queryFn: () => getBedsByState(year, [], selectedBedType),
+    queryKey: ["beds-by-state", selectedYear, selectedMonth, selectedBedType],
+    queryFn: () => getBedsByState(selectedYear, [], selectedBedType, selectedMonth ?? undefined),
   });
 
   const {
@@ -42,10 +46,11 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingRegional,
     error: byRegionError,
   } = useQuery({
-    queryKey: ["beds-by-region", year, selectedBedType],
+    queryKey: ["beds-by-region", selectedYear, selectedMonth, selectedBedType],
     queryFn: () =>
       getBedsByRegion({
-        year,
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
         tipoLeito: selectedBedType || undefined,
       }),
   });
@@ -118,7 +123,7 @@ export default function HospitaisLeitos() {
 
   useEffect(() => {
     setPage(1);
-  }, [selectedUf, selectedBedType]);
+  }, [selectedUf, selectedBedType, selectedYear, selectedMonth]);
 
   const ufOptions = useMemo(() => {
     return stateData.map((s) => ({ value: s.uf, label: `${s.uf} - ${s.estado}` })).sort((a, b) => a.label.localeCompare(b.label));
@@ -150,13 +155,40 @@ export default function HospitaisLeitos() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <BedsStatCard label="Total de Leitos" value={overview?.totalLeitos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={isLoadingOverview} />
-        <BedsStatCard label="Leitos SUS" value={overview?.leitosSus ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Ambulance />} iconColor="green" isLoading={isLoadingOverview} />
-        <BedsStatCard label="Críticos" value={overview?.criticos ?? 0} sublabel={"UTI e emergência"} icon={<AlertCircle />} iconColor="red" isLoading={isLoadingOverview} />
+      {/* Filtros de Ano e Mês */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <YearFilter value={selectedYear} onChange={setSelectedYear} minYear={2020} />
+        <MonthFilter value={selectedMonth} onChange={setSelectedMonth} year={selectedYear} />
+        <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
       </div>
 
-      <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
+      {/* Cards de Indicadores - 3 cards maiores */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <BedsStatCard 
+          label="Total de Leitos" 
+          value={overview?.totalLeitos ?? 0} 
+          sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} 
+          icon={<Bed />} 
+          iconColor="blue" 
+          isLoading={isLoadingOverview} 
+        />
+        <BedsStatCard 
+          label="Leitos SUS" 
+          value={overview?.leitosSus ?? 0} 
+          sublabel={selectedBedType ? "Do tipo selecionado" : "Sistema Único de Saúde"} 
+          icon={<Ambulance />} 
+          iconColor="green" 
+          isLoading={isLoadingOverview} 
+        />
+        <BedsStatCard 
+          label="Críticos" 
+          value={overview?.criticos ?? 0} 
+          sublabel="UTI e emergência" 
+          icon={<AlertCircle />} 
+          iconColor="red" 
+          isLoading={isLoadingOverview} 
+        />
+      </div>
 
       <div className={`grid gap-4 ${selectedBedType ? "lg:grid-cols-1" : "lg:grid-cols-2"}`}>
         <BedsCapacityChart data={stateData} isLoading={isLoadingState} />

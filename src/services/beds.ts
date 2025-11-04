@@ -1,9 +1,15 @@
 import { api } from "./api";
 import type { BedsIndicators, BedsByState, LeitoItem, BedsByRegion } from "../types/leitos";
 
-export async function getBedsIndicators(params: { year: number; tipoLeito?: string }) {
+export async function getBedsIndicators(params: { year: number; month?: number; tipoLeito?: string }) {
   const search = new URLSearchParams();
   search.append("Ano", String(params.year));
+
+  if (params.month) {
+    const monthStr = String(params.month).padStart(2, "0");
+    const anomes = `${params.year}${monthStr}`;
+    search.append("Anomes", anomes);
+  }
 
   if (params.tipoLeito) {
     search.append("Tipo", params.tipoLeito);
@@ -14,9 +20,15 @@ export async function getBedsIndicators(params: { year: number; tipoLeito?: stri
   return data;
 }
 
-export async function getBedsByState(year: number, ufs?: string[], tipoLeito?: string) {
+export async function getBedsByState(year: number, ufs?: string[], tipoLeito?: string, month?: number) {
   const params = new URLSearchParams();
   params.append("Ano", String(year));
+
+  if (month) {
+    const monthStr = String(month).padStart(2, "0");
+    const anomes = `${year}${monthStr}`;
+    params.append("Anomes", anomes);
+  }
 
   if (ufs && ufs.length > 0) {
     ufs.forEach((uf) => params.append("Ufs", uf));
@@ -85,9 +97,15 @@ export async function getAllLeitos(params: { ufs?: string[]; pageSize?: number; 
   return items;
 }
 
-export async function getBedsByRegion(params: { year: number; tipoLeito?: string }) {
+export async function getBedsByRegion(params: { year: number; month?: number; tipoLeito?: string }) {
   const search = new URLSearchParams();
   search.append("Ano", String(params.year));
+
+  if (params.month) {
+    const monthStr = String(params.month).padStart(2, "0");
+    const anomes = `${params.year}${monthStr}`;
+    search.append("Anomes", anomes);
+  }
 
   if (params.tipoLeito) {
     search.append("Tipo", params.tipoLeito);
