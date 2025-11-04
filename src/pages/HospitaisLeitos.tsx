@@ -12,8 +12,7 @@ import { getBedsByState, getBedsIndicators, getLeitosPage, getBedsByRegion } fro
 import type { LeitoItem } from "../types/leitos";
 
 export default function HospitaisLeitos() {
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const year = 2025; // Ano fixo para consultas
   const [selectedBedType, setSelectedBedType] = useState<string>("");
 
   const {
@@ -115,7 +114,7 @@ export default function HospitaisLeitos() {
     if (prevPage >= 1) {
       queryClient.prefetchQuery({ queryKey: ["leitos", { page: prevPage, pageSize, selectedUf, selectedBedType }], queryFn: () => getLeitosPage({ pageNumber: prevPage, pageSize, ufs: selectedUf ? [selectedUf] : undefined, tipoLeito: selectedBedType || undefined }), staleTime: 60 * 1000 });
     }
-  }, [page, pageSize, leitosPage?.totalPages, selectedUf, selectedBedType, selectedYear, selectedMonth, queryClient]);
+  }, [page, pageSize, leitosPage?.totalPages, selectedUf, selectedBedType, queryClient]);
 
   useEffect(() => {
     setPage(1);
