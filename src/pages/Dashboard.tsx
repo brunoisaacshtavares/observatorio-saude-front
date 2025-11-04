@@ -8,9 +8,15 @@ import InteractiveMap from "../components/map/InteractiveMap";
 import ChoroplethMap from "../components/map/ChoroplethMap";
 import UpdatesList from "../components/news/UpdatesList";
 import { getTotalEstabelecimentos, getTotalEstabelecimentosPorEstado } from "../services/establishments";
+import { getBedsIndicators } from "../services/beds";
 
 export default function Dashboard() {
-  const { data: ufCounts, isLoading: isLoadingUfs, isError: isErrorUfs } = useQuery({
+  const year = 2025
+  const {
+    data: ufCounts,
+    isLoading: isLoadingUfs,
+    isError: isErrorUfs,
+  } = useQuery({
     queryKey: ["estabelecimentos-por-estado"],
     queryFn: () => getTotalEstabelecimentosPorEstado(),
     select: (data) => {
@@ -27,10 +33,23 @@ export default function Dashboard() {
         .sort((a, b) => b.qty - a.qty);
     },
   });
-  
-  const { data: totalData, isLoading: isLoadingTotal, isError: isErrorTotal } = useQuery({
+
+  const {
+    data: totalData,
+    isLoading: isLoadingTotal,
+    isError: isErrorTotal,
+  } = useQuery({
     queryKey: ["contagem-total"],
     queryFn: () => getTotalEstabelecimentos(),
+  });
+
+  const {
+    data: bedsIndicators,
+    isLoading: isLoadingBeds,
+    isError: isErrorBeds,
+  } = useQuery({
+    queryKey: ["beds-indicators", year],
+    queryFn: () => getBedsIndicators({year}),
   });
 
   const stateChoroplethData = React.useMemo(() => {
@@ -78,7 +97,14 @@ export default function Dashboard() {
 
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard label="Total de Estabelecimentos" value={isLoadingTotal ? "…" : isErrorTotal ? "Erro" : formatNumber(totalData?.totalEstabelecimentos ?? 0)} icon={<Building2 />} iconBgClass="bg-[#004F6D]" hint="Cadastrados no CNES" />
-        <StatCard label="Total de Leitos" value="—" hint="Aguardando endpoint de leitos" icon={<Bed />} iconBgClass="bg-[#00A67D]" />
+        
+        <StatCard 
+          label="Total de Leitos" 
+          value={isLoadingBeds ? "…" : isErrorBeds ? "Erro" : formatNumber(bedsIndicators?.totalLeitos ?? 0)} 
+          hint="Total de leitos hospitalares" 
+          icon={<Bed />} 
+          iconBgClass="bg-[#00A67D]" 
+        />
         <StatCard label="Melhor Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : melhorCobertura?.nome ?? "N/A"} icon={<TrendingUp />} iconBgClass="bg-[#22C55E]" hint={melhorCobertura ? `${melhorCobertura.cobertura.toFixed(1)} por 100k hab.` : ""} />
         <StatCard label="Pior Cobertura" value={isLoadingUfs ? "…" : isErrorUfs ? "Erro" : piorCobertura?.nome ?? "N/A"} icon={<TrendingDown />} iconBgClass="bg-amber-400" hint={piorCobertura ? `${piorCobertura.cobertura.toFixed(1)} por 100k hab.` : ""} />
       </section>

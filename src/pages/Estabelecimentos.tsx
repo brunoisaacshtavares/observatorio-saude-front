@@ -147,7 +147,6 @@ export default function Estabelecimentos() {
   };
 
   useEffect(() => {
-    try {
       const payload = {
         selectedRegiao,
         selectedUfs,
@@ -157,7 +156,6 @@ export default function Estabelecimentos() {
         showAllWhenEmpty,
       };
       localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(payload));
-    } catch {}
   }, [selectedRegiao, selectedUfs, appliedRegiao, appliedUfs, q, showAllWhenEmpty]);
 
   const {

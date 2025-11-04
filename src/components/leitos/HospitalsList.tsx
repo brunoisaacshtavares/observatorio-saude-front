@@ -1,4 +1,4 @@
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 type Hospital = {
@@ -6,8 +6,7 @@ type Hospital = {
   nome: string;
   localizacao: string;
   leitosTotal: number;
-  leitosDisponiveis: number;
-  percentualOcupacao: number;
+  leitosSus: number;
 };
 
 type UfOption = { value: string; label: string };
@@ -32,26 +31,6 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
       listRef.current.scrollTop = 0;
     }
   }, [page]);
-  const getOccupancyColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-red-500";
-    if (percentage >= 80) return "bg-orange-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const getProgressBarColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-red-500";
-    if (percentage >= 80) return "bg-orange-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const getPercentageTextColor = (percentage: number) => {
-    if (percentage >= 90) return "text-red-600";
-    if (percentage >= 80) return "text-orange-600";
-    if (percentage >= 60) return "text-yellow-600";
-    return "text-green-600";
-  };
 
   if (isLoading) {
     return (
@@ -61,7 +40,7 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
           <div className="h-8 w-40 bg-slate-100 rounded" />
         </div>
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse">
               <div className="h-20 bg-slate-100 rounded-lg"></div>
             </div>
@@ -90,41 +69,32 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
         </div>
       </div>
 
-      <div ref={listRef} className="space-y-3 max-h-96 overflow-y-auto">
+      <div ref={listRef} className="space-y-3 max-h-96 overflow-y-auto pr-1">
         {hospitals.map((hospital) => (
           <div key={hospital.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-slate-900 line-clamp-1">{hospital.nome}</h4>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-slate-900 line-clamp-2">{hospital.nome}</h4>
                 <div className="flex items-center gap-1 mt-1">
-                  <MapPin size={12} className="text-slate-400" />
-                  <p className="text-xs text-slate-600">{hospital.localizacao}</p>
+                  <MapPin size={12} className="text-slate-400 min-w-fit" />
+                  <p className="text-xs text-slate-600 truncate">{hospital.localizacao}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {hospital.percentualOcupacao >= 80 && <AlertTriangle size={16} className="text-orange-500" />}
-                <div className={`px-2 py-1 rounded-full ${getOccupancyColor(hospital.percentualOcupacao)} bg-opacity-10`}>
-                  <span className={`text-sm font-bold ${getPercentageTextColor(hospital.percentualOcupacao)}`}>{hospital.percentualOcupacao}%</span>
+              <div className="flex flex-col text-right gap-0.5 min-w-[120px]">
+                <div className="flex justify-between gap-2">
+                  <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Leitos:</span>
+                  <span className="text-xs font-extrabold text-blue-600/90 whitespace-nowrap">
+                    {hospital.leitosTotal.toLocaleString('pt-BR')}
+                  </span>
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600">Ocupação</span>
-                <span className="text-slate-900 font-medium">
-                  {hospital.leitosTotal - hospital.leitosDisponiveis} / {hospital.leitosTotal} leitos
-                </span>
-              </div>
-
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div className={`h-full transition-all duration-300 ${getProgressBarColor(hospital.percentualOcupacao)}`} style={{ width: `${hospital.percentualOcupacao}%` }} />
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Disponíveis: {hospital.leitosDisponiveis}</span>
-                <span className="text-slate-500">Total: {hospital.leitosTotal}</span>
+                
+                <div className="flex justify-between gap-2">
+                  <span className="text-xs text-slate-600 font-medium whitespace-nowrap">Leitos SUS:</span>
+                  <span className="text-xs font-extrabold text-green-600/90 whitespace-nowrap">
+                    {hospital.leitosSus.toLocaleString('pt-BR')}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -133,13 +103,13 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
 
       {page !== undefined && totalPages !== undefined && (
         <div className="mt-4 flex items-center justify-between">
-          <button type="button" className="px-3 py-1.5 text-sm rounded border border-slate-200 text-slate-700 disabled:opacity-50" onClick={onPrev} disabled={page <= 1}>
+          <button type="button" className="px-3 py-1.5 text-sm rounded border border-slate-200 text-slate-700 disabled:opacity-50 hover:bg-slate-100 transition" onClick={onPrev} disabled={page <= 1}>
             Anterior
           </button>
           <div className="text-xs text-slate-600">
             Página {page} de {Math.max(totalPages, 1)}
           </div>
-          <button type="button" className="px-3 py-1.5 text-sm rounded border border-slate-200 text-slate-700 disabled:opacity-50" onClick={onNext} disabled={page >= (totalPages || 1)}>
+          <button type="button" className="px-3 py-1.5 text-sm rounded border border-slate-200 text-slate-700 disabled:opacity-50 hover:bg-slate-100 transition" onClick={onNext} disabled={page >= (totalPages || 1)}>
             Próxima
           </button>
         </div>

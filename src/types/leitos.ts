@@ -1,7 +1,6 @@
 export type BedsIndicators = {
   totalLeitos: number;
-  leitosDisponiveis: number;
-  ocupacaoMedia: number;
+  leitosSus: number;
   criticos: number;
 };
 
@@ -12,8 +11,7 @@ export type BedsByState = {
   regiao: string;
   populacao: number;
   totalLeitos: number;
-  leitosDisponiveis: number;
-  ocupacaoMedia: number;
+  leitosSus: number;
   criticos: number;
   coberturaLeitosPor1kHab: number;
 };
@@ -22,10 +20,8 @@ export type TopBedsHospital = {
   nomeEstabelecimento: string;
   localizacaoUf: string;
   enderecoCompleto: string;
-  leitosOcupados: number;
-  leitosDisponiveis: number;
+  leitosSus: number;
   totalLeitos: number;
-  porcentagemOcupacao: number;
   codCnes: number;
 };
 
@@ -35,19 +31,19 @@ export type LeitoItem = {
   enderecoCompleto?: string;
   localizacaoUf?: string;
   totalLeitos?: number;
-  leitosDisponiveis?: number;
-  porcentagemOcupacao: number;
+  leitosSus?: number;
   tipoLeito?: string;
 };
 
 export type BedsByRegion = {
-  regiao: string;
-  totalLeitos: number;
-  leitosDisponiveis: number;
-  leitosOcupados: number;
-  ocupacaoMedia: number;
-  criticos: number;
-};
+  nomeRegiao: string
+  populacao: number
+  totalLeitos: number
+  leitosSus: number
+  criticos: number
+  coberturaLeitosPor1kHab: number
+}
+
 
 export type BedType = {
   id: string;
