@@ -7,6 +7,8 @@ import HospitalsList from "../components/leitos/HospitalsList";
 import RegionalAnalysis from "../components/leitos/RegionalAnalysis";
 import HighOccupancyAlert from "../components/leitos/HighOccupancyAlert";
 import BedTypeFilter from "../components/leitos/BedTypeFilter";
+import YearFilter from "../components/leitos/YearFilter";
+import MonthFilter from "../components/leitos/MonthFilter";
 import RegionalOccupancyChart from "../components/leitos/RegionalOccupancyChart";
 import { Bed, CheckCircle, Activity, AlertCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,66 +16,81 @@ import { getBedsByState, getBedsIndicators, getLeitosPage } from "../services/be
 import type { BedsByState, LeitoItem } from "../types/leitos";
 
 export default function HospitaisLeitos() {
-  const year = 2025;
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedBedType, setSelectedBedType] = useState<string>("");
 
-  // Indicadores gerais - não filtrados (API não suporta filtro)
+  const safeNumber = (value: number | undefined | null, defaultValue: number = 0): number => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return defaultValue;
+    }
+    return value;
+  };
+
   const {
     data: overview,
     isLoading: isLoadingOverview,
     error: overviewError,
   } = useQuery({
-    queryKey: ["beds-indicators", year],
-    queryFn: () => getBedsIndicators(year),
-    enabled: !selectedBedType, // Só busca se não houver filtro
+    queryKey: ["beds-indicators", selectedYear, selectedMonth, selectedBedType],
+    queryFn: async () => {
+      const data = await getBedsIndicators(selectedYear, selectedMonth ?? undefined);
+      return data;
+    },
+    enabled: !selectedBedType,
   });
 
-  // Indicadores por estado - não filtrados (API não suporta filtro)
   const {
     data: byState,
     isLoading: isLoadingState,
     error: byStateError,
   } = useQuery({
-    queryKey: ["beds-by-state", year],
-    queryFn: () => getBedsByState(year),
-    enabled: !selectedBedType, // Só busca se não houver filtro
+    queryKey: ["beds-by-state", selectedYear, selectedMonth, selectedBedType],
+    queryFn: async () => {
+      const data = await getBedsByState(selectedYear, undefined, selectedMonth ?? undefined);
+      return data;
+    },
+    enabled: !selectedBedType,
   });
 
-  // Buscar TODOS os leitos filtrados para calcular estatísticas
   const { data: allFilteredBeds, isLoading: isLoadingFiltered } = useQuery({
-    queryKey: ["all-filtered-beds", selectedBedType],
+    queryKey: ["all-filtered-beds", selectedBedType, selectedYear, selectedMonth],
     queryFn: async () => {
       if (!selectedBedType) return null;
-      // Buscar várias páginas para ter uma amostra representativa
-      const pages = await Promise.all([getLeitosPage({ pageNumber: 1, pageSize: 100, tipoLeito: selectedBedType }), getLeitosPage({ pageNumber: 2, pageSize: 100, tipoLeito: selectedBedType }), getLeitosPage({ pageNumber: 3, pageSize: 100, tipoLeito: selectedBedType })]);
+      const pages = await Promise.all([getLeitosPage({ pageNumber: 1, pageSize: 100, tipoLeito: selectedBedType, year: selectedYear, month: selectedMonth ?? undefined }), getLeitosPage({ pageNumber: 2, pageSize: 100, tipoLeito: selectedBedType, year: selectedYear, month: selectedMonth ?? undefined }), getLeitosPage({ pageNumber: 3, pageSize: 100, tipoLeito: selectedBedType, year: selectedYear, month: selectedMonth ?? undefined })]);
       return pages.flatMap((p) => p.items);
     },
     enabled: !!selectedBedType,
   });
 
-  // Calcular indicadores filtrados a partir dos dados coletados
   const filteredOverview = useMemo(() => {
     if (!selectedBedType || !allFilteredBeds || allFilteredBeds.length === 0) return null;
 
     const total = allFilteredBeds.reduce((sum, bed) => sum + (bed.totalLeitos || 0), 0);
-    const disponiveis = allFilteredBeds.reduce((sum, bed) => sum + (bed.leitosDisponiveis || 0), 0);
-    const ocupados = total - disponiveis;
-    const ocupacaoMedia = total > 0 ? (ocupados / total) * 100 : 0;
-
-    // Considerar críticos como hospitais com ocupação >= 80%
-    const criticos = allFilteredBeds.filter((bed) => (bed.porcentagemOcupacao || 0) >= 80).length;
+    const leitosSus = allFilteredBeds.reduce((sum, bed) => sum + ((bed as any).leitosSus || 0), 0);
+    const estabelecimentos = allFilteredBeds.length;
 
     return {
       totalLeitos: total,
-      leitosDisponiveis: disponiveis,
-      ocupacaoMedia: Math.round(ocupacaoMedia * 100) / 100,
-      criticos,
+      leitosDisponiveis: leitosSus,
+      ocupacaoMedia: total > 0 ? (leitosSus / total) * 100 : 0,
+      criticos: estabelecimentos,
     };
   }, [selectedBedType, allFilteredBeds]);
 
-  // Calcular dados por estado a partir dos leitos filtrados
   const filteredStateData = useMemo(() => {
     if (!selectedBedType || !allFilteredBeds || allFilteredBeds.length === 0) return null;
+
+    const populationMap = new Map<string, { estado: string; regiao: string; populacao: number }>();
+    if (byState) {
+      (byState as BedsByState[]).forEach((state) => {
+        populationMap.set(state.siglaUf, {
+          estado: state.nomeUf,
+          regiao: state.regiao,
+          populacao: state.populacao,
+        });
+      });
+    }
 
     const stateMap = new Map<
       string,
@@ -89,21 +106,24 @@ export default function HospitaisLeitos() {
       const uf = bed.localizacaoUf || "Desconhecido";
       const existing = stateMap.get(uf) || { total: 0, disponiveis: 0, uf, count: 0 };
       existing.total += bed.totalLeitos || 0;
-      existing.disponiveis += bed.leitosDisponiveis || 0;
+      existing.disponiveis += (bed as any).leitosSus || 0;
       existing.count += 1;
       stateMap.set(uf, existing);
     });
 
-    return Array.from(stateMap.entries()).map(([uf, data]) => ({
-      uf,
-      estado: uf, // Simplificado, pois não temos o nome completo
-      total: data.total,
-      disponiveis: data.disponiveis,
-      regiao: "", // Não disponível nos dados filtrados
-      populacao: 0,
-      leitosPor1000: 0,
-    }));
-  }, [selectedBedType, allFilteredBeds]);
+    return Array.from(stateMap.entries()).map(([uf, data]) => {
+      const popData = populationMap.get(uf);
+      return {
+        uf,
+        estado: popData?.estado || uf,
+        total: data.total,
+        disponiveis: data.disponiveis,
+        regiao: popData?.regiao || "",
+        populacao: popData?.populacao || 0,
+        leitosPor1000: popData && popData.populacao > 0 ? (data.total / popData.populacao) * 1000 : 0,
+      };
+    });
+  }, [selectedBedType, allFilteredBeds, byState]);
 
   const stateData = useMemo(() => {
     if (selectedBedType && filteredStateData) return filteredStateData;
@@ -147,13 +167,15 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingLeitos,
     error: leitosError,
   } = useQuery({
-    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType }],
+    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
     queryFn: () =>
       getLeitosPage({
         pageNumber: page,
         pageSize,
         ufs: selectedUf ? [selectedUf] : undefined,
         tipoLeito: selectedBedType || undefined,
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
       }),
     placeholderData: (prev) => prev,
     staleTime: 60 * 1000,
@@ -206,13 +228,15 @@ export default function HospitaisLeitos() {
 
     if (!totalPages || nextPage <= totalPages) {
       queryClient.prefetchQuery({
-        queryKey: ["leitos", { page: nextPage, pageSize, selectedUf, selectedBedType }],
+        queryKey: ["leitos", { page: nextPage, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
         queryFn: () =>
           getLeitosPage({
             pageNumber: nextPage,
             pageSize,
             ufs: selectedUf ? [selectedUf] : undefined,
             tipoLeito: selectedBedType || undefined,
+            year: selectedYear,
+            month: selectedMonth ?? undefined,
           }),
         staleTime: 60 * 1000,
       });
@@ -220,23 +244,24 @@ export default function HospitaisLeitos() {
 
     if (prevPage >= 1) {
       queryClient.prefetchQuery({
-        queryKey: ["leitos", { page: prevPage, pageSize, selectedUf, selectedBedType }],
+        queryKey: ["leitos", { page: prevPage, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
         queryFn: () =>
           getLeitosPage({
             pageNumber: prevPage,
             pageSize,
             ufs: selectedUf ? [selectedUf] : undefined,
             tipoLeito: selectedBedType || undefined,
+            year: selectedYear,
+            month: selectedMonth ?? undefined,
           }),
         staleTime: 60 * 1000,
       });
     }
-  }, [page, pageSize, leitosPage?.totalPages, selectedUf, selectedBedType, queryClient]);
+  }, [page, pageSize, leitosPage?.totalPages, selectedUf, selectedBedType, selectedYear, selectedMonth, queryClient]);
 
-  // Reset pagination when UF or bed type changes
   useEffect(() => {
     setPage(1);
-  }, [selectedUf, selectedBedType]);
+  }, [selectedUf, selectedBedType, selectedYear, selectedMonth]);
 
   const ufOptions = useMemo(() => {
     return stateData.map((s) => ({ value: s.uf, label: `${s.uf} - ${s.estado}` })).sort((a, b) => a.label.localeCompare(b.label));
@@ -253,9 +278,7 @@ export default function HospitaisLeitos() {
   }, []);
 
   const regionalOccupancyData = useMemo(() => {
-    // Se tem filtro, usar dados filtrados agrupados por região
     if (selectedBedType && allFilteredBeds && allFilteredBeds.length > 0) {
-      // Mapeamento de UF para Região
       const ufToRegion: Record<string, string> = {
         AC: "Norte",
         AP: "Norte",
@@ -286,16 +309,15 @@ export default function HospitaisLeitos() {
         SC: "Sul",
       };
 
-      const regionalMap = new Map<string, { totalLeitos: number; leitosDisponiveis: number; leitosOcupados: number }>();
+      const regionalMap = new Map<string, { totalLeitos: number; leitosSus: number }>();
 
       allFilteredBeds.forEach((bed) => {
         const uf = bed.localizacaoUf || "";
         const regiao = ufToRegion[uf] || "Desconhecido";
 
-        const existing = regionalMap.get(regiao) || { totalLeitos: 0, leitosDisponiveis: 0, leitosOcupados: 0 };
+        const existing = regionalMap.get(regiao) || { totalLeitos: 0, leitosSus: 0 };
         existing.totalLeitos += bed.totalLeitos || 0;
-        existing.leitosDisponiveis += bed.leitosDisponiveis || 0;
-        existing.leitosOcupados += (bed.totalLeitos || 0) - (bed.leitosDisponiveis || 0);
+        existing.leitosSus += (bed as any).leitosSus || 0;
         regionalMap.set(regiao, existing);
       });
 
@@ -304,34 +326,30 @@ export default function HospitaisLeitos() {
         .map(([regiao, data]) => ({
           regiao,
           totalLeitos: data.totalLeitos,
-          leitosDisponiveis: data.leitosDisponiveis,
-          leitosOcupados: data.leitosOcupados,
-          ocupacaoMedia: data.totalLeitos > 0 ? (data.leitosOcupados / data.totalLeitos) * 100 : 0,
+          leitosDisponiveis: data.leitosSus,
+          leitosOcupados: 0,
+          ocupacaoMedia: data.totalLeitos > 0 ? (data.leitosSus / data.totalLeitos) * 100 : 0,
         }));
     }
 
-    // Sem filtro, usar dados por estado
     if (!byState) return [];
 
     const regionalMap = new Map<
       string,
       {
         totalLeitos: number;
-        leitosDisponiveis: number;
-        leitosOcupados: number;
+        leitosSus: number;
       }
     >();
 
     (byState as BedsByState[]).forEach((state) => {
       const existing = regionalMap.get(state.regiao) || {
         totalLeitos: 0,
-        leitosDisponiveis: 0,
-        leitosOcupados: 0,
+        leitosSus: 0,
       };
 
-      existing.totalLeitos += state.totalLeitos;
-      existing.leitosDisponiveis += state.leitosDisponiveis;
-      existing.leitosOcupados += state.totalLeitos - state.leitosDisponiveis;
+      existing.totalLeitos += state.totalLeitos || 0;
+      existing.leitosSus += (state as any).leitosSus || state.leitosDisponiveis || 0;
 
       regionalMap.set(state.regiao, existing);
     });
@@ -339,9 +357,9 @@ export default function HospitaisLeitos() {
     return Array.from(regionalMap.entries()).map(([regiao, data]) => ({
       regiao,
       totalLeitos: data.totalLeitos,
-      leitosDisponiveis: data.leitosDisponiveis,
-      leitosOcupados: data.leitosOcupados,
-      ocupacaoMedia: data.totalLeitos > 0 ? (data.leitosOcupados / data.totalLeitos) * 100 : 0,
+      leitosDisponiveis: data.leitosSus,
+      leitosOcupados: 0,
+      ocupacaoMedia: data.totalLeitos > 0 ? (data.leitosSus / data.totalLeitos) * 100 : 0,
     }));
   }, [byState, selectedBedType, allFilteredBeds]);
 
@@ -364,17 +382,43 @@ export default function HospitaisLeitos() {
       )}
 
       {}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <BedsStatCard label="Total de Leitos" value={(selectedBedType ? filteredOverview?.totalLeitos : overview?.totalLeitos) ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
-        <BedsStatCard label="Leitos Disponíveis" value={(selectedBedType ? filteredOverview?.leitosDisponiveis : overview?.leitosDisponiveis) ?? 0} sublabel="Prontos para uso" icon={<CheckCircle />} iconColor="green" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
-        <BedsStatCard label="Ocupação Média" value={`${(selectedBedType ? filteredOverview?.ocupacaoMedia : overview?.ocupacaoMedia) ?? 0}%`} sublabel={selectedBedType ? "Do tipo selecionado" : "Taxa nacional"} icon={<Activity />} iconColor="yellow" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
-        <BedsStatCard label="Críticos" value={(selectedBedType ? filteredOverview?.criticos : overview?.criticos) ?? 0} sublabel={selectedBedType ? "Com alta ocupação" : "UTI e emergência"} icon={<AlertCircle />} iconColor="red" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <YearFilter value={selectedYear} onChange={setSelectedYear} minYear={2020} />
+        <MonthFilter value={selectedMonth} onChange={setSelectedMonth} year={selectedYear} />
+        <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
       </div>
 
-      {/* Filter by Bed Type */}
-      <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
+      {}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <BedsStatCard label="Total de Leitos" value={safeNumber(selectedBedType ? filteredOverview?.totalLeitos : overview?.totalLeitos)} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
+        <BedsStatCard label="Leitos SUS" value={safeNumber(selectedBedType ? filteredOverview?.leitosDisponiveis : (overview as any)?.leitosSus)} sublabel={selectedBedType ? "Do tipo selecionado" : "Sistema Único de Saúde"} icon={<CheckCircle />} iconColor="green" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
+        <BedsStatCard
+          label="Cobertura SUS"
+          value={(() => {
+            if (selectedBedType && filteredOverview) {
+              const total = safeNumber(filteredOverview.totalLeitos);
+              const sus = safeNumber(filteredOverview.leitosDisponiveis);
+              if (total > 0) {
+                return `${((sus / total) * 100).toFixed(1)}%`;
+              }
+              return "0.0%";
+            }
+            const total = safeNumber(overview?.totalLeitos);
+            const sus = safeNumber((overview as any)?.leitosSus);
+            if (total > 0) {
+              return `${((sus / total) * 100).toFixed(1)}%`;
+            }
+            return "0.0%";
+          })()}
+          sublabel={selectedBedType ? "Do tipo selecionado" : "Leitos disponíveis pelo SUS"}
+          icon={<Activity />}
+          iconColor="blue"
+          isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview}
+        />
+        <BedsStatCard label="Estabelecimentos" value={safeNumber(selectedBedType ? filteredOverview?.criticos : overview?.criticos)} sublabel={selectedBedType ? "Com leitos do tipo" : "Total cadastrados"} icon={<AlertCircle />} iconColor="red" isLoading={selectedBedType ? isLoadingFiltered : isLoadingOverview} />
+      </div>
 
-      {/* Regional Occupancy Chart */}
+      {}
       <RegionalOccupancyChart data={regionalOccupancyData} isLoading={selectedBedType ? isLoadingFiltered : isLoadingState} />
 
       {}

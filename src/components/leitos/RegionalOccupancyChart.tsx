@@ -13,11 +13,11 @@ type Props = {
   isLoading?: boolean;
 };
 
-const getOccupancyColor = (percentage: number) => {
-  if (percentage >= 80) return "#DC2626"; // red-600
-  if (percentage >= 60) return "#F59E0B"; // amber-500
-  if (percentage >= 40) return "#10B981"; // emerald-500
-  return "#00A67D"; // primary green
+const getCoverageColor = (percentage: number) => {
+  if (percentage >= 80) return "#00A67D";
+  if (percentage >= 60) return "#10B981";
+  if (percentage >= 40) return "#F59E0B";
+  return "#DC2626";
 };
 
 export default function RegionalOccupancyChart({ data, isLoading = false }: Props) {
@@ -26,7 +26,7 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
   if (isLoading) {
     return (
       <div className="card p-5">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">Percentual de Ocupação de Leitos por Região</h3>
+        <h3 className="text-base font-semibold text-slate-900 mb-4">Cobertura SUS por Região</h3>
         <div className="h-64 flex items-center justify-center">
           <p className="text-sm text-slate-500">Carregando...</p>
         </div>
@@ -37,7 +37,7 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
   if (!data || data.length === 0) {
     return (
       <div className="card p-5">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">Percentual de Ocupação de Leitos por Região</h3>
+        <h3 className="text-base font-semibold text-slate-900 mb-4">Cobertura SUS por Região</h3>
         <div className="h-64 flex items-center justify-center">
           <p className="text-sm text-slate-500">Nenhum dado disponível</p>
         </div>
@@ -47,7 +47,7 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
 
   return (
     <div className="card p-5">
-      <h3 className="text-base font-semibold text-slate-900 mb-4">Percentual de Ocupação de Leitos por Região</h3>
+      <h3 className="text-base font-semibold text-slate-900 mb-4">Cobertura SUS por Região</h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={sortedData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
@@ -55,7 +55,7 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
             <XAxis dataKey="regiao" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
             <Tooltip
-              formatter={(value: number) => [`${value.toFixed(1)}%`, "Taxa de Ocupação"]}
+              formatter={(value: number) => [`${value.toFixed(1)}%`, "Cobertura SUS"]}
               labelFormatter={(label) => `Região ${label}`}
               contentStyle={{
                 backgroundColor: "white",
@@ -64,9 +64,9 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
                 padding: "8px",
               }}
             />
-            <Bar dataKey="ocupacaoMedia" radius={[4, 4, 0, 0]} name="ocupacaoMedia">
+            <Bar dataKey="ocupacaoMedia" radius={[4, 4, 0, 0]} name="coberturaSus">
               {sortedData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getOccupancyColor(entry.ocupacaoMedia)} />
+                <Cell key={`cell-${index}`} fill={getCoverageColor(entry.ocupacaoMedia)} />
               ))}
             </Bar>
           </BarChart>
@@ -74,20 +74,20 @@ export default function RegionalOccupancyChart({ data, isLoading = false }: Prop
       </div>
       <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-[#00A67D] rounded" />
-          <span className="text-xs text-slate-600">Baixa (&lt; 40%)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-[#10B981] rounded" />
-          <span className="text-xs text-slate-600">Moderada (40-60%)</span>
+          <div className="w-3 h-3 bg-[#DC2626] rounded" />
+          <span className="text-xs text-slate-600">Muito Baixa (&lt; 40%)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 bg-[#F59E0B] rounded" />
-          <span className="text-xs text-slate-600">Alta (60-80%)</span>
+          <span className="text-xs text-slate-600">Baixa (40-60%)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 bg-[#DC2626] rounded" />
-          <span className="text-xs text-slate-600">Crítica (&gt; 80%)</span>
+          <div className="w-3 h-3 bg-[#10B981] rounded" />
+          <span className="text-xs text-slate-600">Boa (60-80%)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-[#00A67D] rounded" />
+          <span className="text-xs text-slate-600">Excelente (&gt; 80%)</span>
         </div>
       </div>
     </div>
