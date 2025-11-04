@@ -19,7 +19,7 @@ export default function YearFilter({ value, onChange, minYear = 2020, maxYear = 
             Ano de Referência:
           </label>
         </div>
-        <select id="year-select" value={value} onChange={(e) => onChange(Number(e.target.value))} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm">
+        <select id="year-select" value={value} onChange={(e) => onChange(Number(e.target.value))} className="flex-1 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md" style={{ backgroundPosition: "right 0.75rem center" }}>
           {years.map((year) => (
             <option key={year} value={year}>
               {year}

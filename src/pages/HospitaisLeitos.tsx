@@ -58,13 +58,13 @@ export default function HospitaisLeitos() {
   const stateData = useMemo(() => {
     if (!byState) return [];
     return byState.map((s) => ({
-      uf: s.siglaUf,
-      estado: s.nomeUf,
-      total: s.totalLeitos,
-      leitosSus: s.leitosSus,
-      regiao: s.regiao,
-      populacao: s.populacao,
-      leitosPor1000: s.coberturaLeitosPor1kHab,
+      uf: s.siglaUf || "",
+      estado: s.nomeUf || "",
+      total: s.totalLeitos || 0,
+      leitosSus: s.leitosSus || 0,
+      regiao: s.regiao || "",
+      populacao: s.populacao || 0,
+      leitosPor1000: s.coberturaLeitosPor1kHab || 0,
     }));
   }, [byState]);
 

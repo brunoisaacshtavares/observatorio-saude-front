@@ -35,7 +35,7 @@ export default function MonthFilter({ value, onChange, year }: MonthFilterProps)
             Mês (Opcional):
           </label>
         </div>
-        <select id="month-select" value={value ?? ""} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm">
+        <select id="month-select" value={value ?? ""} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} className="flex-1 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md" style={{ backgroundPosition: "right 0.75rem center" }}>
           <option value="">Todos os meses</option>
           {availableMonths.map((month) => (
             <option key={month.value} value={month.value}>
