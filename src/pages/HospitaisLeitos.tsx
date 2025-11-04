@@ -164,30 +164,9 @@ export default function HospitaisLeitos() {
 
       {/* Cards de Indicadores - 3 cards maiores */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <BedsStatCard 
-          label="Total de Leitos" 
-          value={overview?.totalLeitos ?? 0} 
-          sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} 
-          icon={<Bed />} 
-          iconColor="blue" 
-          isLoading={isLoadingOverview} 
-        />
-        <BedsStatCard 
-          label="Leitos SUS" 
-          value={overview?.leitosSus ?? 0} 
-          sublabel={selectedBedType ? "Do tipo selecionado" : "Sistema Único de Saúde"} 
-          icon={<Ambulance />} 
-          iconColor="green" 
-          isLoading={isLoadingOverview} 
-        />
-        <BedsStatCard 
-          label="Críticos" 
-          value={overview?.criticos ?? 0} 
-          sublabel="UTI e emergência" 
-          icon={<AlertCircle />} 
-          iconColor="red" 
-          isLoading={isLoadingOverview} 
-        />
+        <BedsStatCard label="Total de Leitos" value={overview?.totalLeitos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={isLoadingOverview} />
+        <BedsStatCard label="Leitos SUS" value={overview?.leitosSus ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Sistema Único de Saúde"} icon={<Ambulance />} iconColor="green" isLoading={isLoadingOverview} />
+        <BedsStatCard label="Críticos" value={overview?.criticos ?? 0} sublabel="UTI e emergência" icon={<AlertCircle />} iconColor="red" isLoading={isLoadingOverview} />
       </div>
 
       <div className={`grid gap-4 ${selectedBedType ? "lg:grid-cols-1" : "lg:grid-cols-2"}`}>
