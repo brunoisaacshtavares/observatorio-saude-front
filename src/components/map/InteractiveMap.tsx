@@ -2,15 +2,25 @@ import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { LatLngBounds, type LatLngExpression } from 'leaflet';
-import L from 'leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster'; 
 import { getEstabelecimentosGeoJson } from '../../services/establishments';
+import L from 'leaflet';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconUrl: '/images/marker-icon.png',
-    iconRetinaUrl: '/images/marker-icon-2x.png',
-    shadowUrl: '/images/shadow.png',
+  iconRetinaUrl: iconRetinaUrl,
+  iconUrl: iconUrl,
+  shadowUrl: shadowUrl,
+})
+
+const myIcon = L.icon({
+  iconUrl: iconUrl,
+  shadowUrl: shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  shadowSize: [41, 41],
 });
 
 function MapEventsHandler({ onBoundsChange }: { onBoundsChange: (bounds: LatLngBounds, zoom: number) => void }) {
@@ -71,7 +81,7 @@ export default function InteractiveMap() {
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        />
+/>
 
         {geoJsonData?.features && mapInfo.zoom >= ZOOM_LEVEL_TO_FETCH && (
            <MarkerClusterGroup 
@@ -86,7 +96,7 @@ export default function InteractiveMap() {
               const uniqueKey = `${latitude}-${longitude}`;
 
               return (
-                <Marker key={uniqueKey} position={[latitude, longitude]}>
+                <Marker key={uniqueKey} position={[latitude, longitude]} icon={myIcon}>
                   <Popup>
                     <div>
                       <strong>{properties.nome}</strong>

@@ -88,9 +88,16 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingLeitos,
     error: leitosError,
   } = useQuery({
-    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType }],
-    queryFn: () => getLeitosPage({ pageNumber: page, pageSize, ufs: selectedUf ? [selectedUf] : undefined, tipoLeito: selectedBedType || undefined }),
-    placeholderData: (prev) => prev,
+    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
+    queryFn: () => 
+      getLeitosPage({ 
+        pageNumber: page, 
+        pageSize, 
+        ufs: selectedUf ? [selectedUf] : undefined, 
+        tipoLeito: selectedBedType || undefined,
+        year: selectedYear, 
+        month: selectedMonth ?? undefined
+      }),
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -109,17 +116,52 @@ export default function HospitaisLeitos() {
     }));
   }, [leitosPage, page]);
 
-  useEffect(() => {
+useEffect(() => {
     const nextPage = page + 1;
     const prevPage = page - 1;
     const totalPages = leitosPage?.totalPages || undefined;
+
+    const queryOptions = {
+      page: nextPage, 
+      pageSize, 
+      selectedUf, 
+      selectedBedType,
+      selectedYear,
+      selectedMonth
+    };
+
+    const queryFnParams = {
+      pageSize, 
+      ufs: selectedUf ? [selectedUf] : undefined, 
+      tipoLeito: selectedBedType || undefined,
+      year: selectedYear, 
+      month: selectedMonth ?? undefined
+    };
+
     if (!totalPages || nextPage <= totalPages) {
-      queryClient.prefetchQuery({ queryKey: ["leitos", { page: nextPage, pageSize, selectedUf, selectedBedType }], queryFn: () => getLeitosPage({ pageNumber: nextPage, pageSize, ufs: selectedUf ? [selectedUf] : undefined, tipoLeito: selectedBedType || undefined }), staleTime: 60 * 1000 });
+      queryClient.prefetchQuery({ 
+        queryKey: ["leitos", { ...queryOptions, page: nextPage }],
+        queryFn: () => getLeitosPage({ ...queryFnParams, pageNumber: nextPage }),
+        staleTime: 60 * 1000 
+      });
     }
     if (prevPage >= 1) {
-      queryClient.prefetchQuery({ queryKey: ["leitos", { page: prevPage, pageSize, selectedUf, selectedBedType }], queryFn: () => getLeitosPage({ pageNumber: prevPage, pageSize, ufs: selectedUf ? [selectedUf] : undefined, tipoLeito: selectedBedType || undefined }), staleTime: 60 * 1000 });
+      queryClient.prefetchQuery({ 
+        queryKey: ["leitos", { ...queryOptions, page: prevPage }],
+        queryFn: () => getLeitosPage({ ...queryFnParams, pageNumber: prevPage }),
+        staleTime: 60 * 1000 
+      });
     }
-  }, [page, pageSize, leitosPage?.totalPages, selectedUf, selectedBedType, queryClient]);
+  }, [
+    page, 
+    pageSize, 
+    leitosPage?.totalPages, 
+    selectedUf, 
+    selectedBedType, 
+    selectedYear,
+    selectedMonth,
+    queryClient
+  ]);
 
   useEffect(() => {
     setPage(1);

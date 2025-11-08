@@ -14,11 +14,32 @@ type Props = {
   disableInteractions?: boolean;
 };
 
+type ChartDataItem = {
+  estado: string;
+  uf?: string;
+  regiao?: string;
+  color?: string;
+  estabelecimentos: number;
+  label: string;
+};
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: {
+    payload: ChartDataItem;
+  }[];
+};
+
+
 const RankingBarChart = forwardRef<HTMLDivElement, Props>(
   ({ title, data, onBarClick, asc = false, onToggleAsc, hideControls = false, disableInteractions = false }, ref) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-    const sorted = [...data].map((d) => ({ ...d, label: d.uf ?? d.estado })).sort((a, b) => (asc ? a.estabelecimentos - b.estabelecimentos : b.estabelecimentos - a.estabelecimentos));
-    const CustomTooltip = ({ active, payload }: any) => {
+
+    const sorted: ChartDataItem[] = [...data]
+      .map((d) => ({ ...d, label: d.uf ?? d.estado }))
+      .sort((a, b) => (asc ? a.estabelecimentos - b.estabelecimentos : b.estabelecimentos - a.estabelecimentos));
+
+    const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
       if (active && payload && payload.length) {
         const p = payload[0]?.payload;
         if (!p) return null;
@@ -27,7 +48,7 @@ const RankingBarChart = forwardRef<HTMLDivElement, Props>(
       return null;
     };
     return (
-      <div className="card p-4" ref={ref}> 
+      <div className="card p-4" ref={ref}>
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-slate-700">{title}</p>
           {!hideControls && onToggleAsc ? (
@@ -55,7 +76,7 @@ const RankingBarChart = forwardRef<HTMLDivElement, Props>(
               onMouseMove={
                 disableInteractions
                   ? undefined
-                  : (state: any) => {
+                  : (state) => {
                       const idx = typeof state?.activeTooltipIndex === "number" ? state.activeTooltipIndex : null;
                       setHoveredIndex(idx);
                     }

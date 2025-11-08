@@ -60,6 +60,13 @@ export async function getLeitosPage(params: { pageNumber?: number; pageSize?: nu
   if (params.tipoLeito) {
     search.append("Tipo", params.tipoLeito);
   }
+  search.append("Ano", String(params.year));
+
+  if (params.month) {
+    const monthStr = String(params.month).padStart(2, "0");
+    const anomes = `${params.year}${monthStr}`;
+    search.append("Anomes", anomes);
+  }
   const qs = search.toString();
   const { data } = await api.get<string | LeitosPage>(`/api/v1/Leitos?${qs}`, { headers: { accept: "text/plain" } });
 

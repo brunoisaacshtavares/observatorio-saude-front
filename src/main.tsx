@@ -6,6 +6,8 @@ import { queryClient } from "./app/providers/queryClient";
 import { router } from "./app/routes";
 import "./index.css";
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css'
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css'
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>

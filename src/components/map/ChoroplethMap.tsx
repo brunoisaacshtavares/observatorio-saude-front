@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import localGeoJson from './../../assets/json/br_states.json';
+import type { FeatureCollection, Feature, Geometry, GeoJsonProperties } from 'geojson';
+import type { Layer, PathOptions } from 'leaflet';
 
 type StateChoroplethDataItem = {
   uf: string;
@@ -13,6 +15,15 @@ type ChoroplethMapProps = {
   isError?: boolean;
   min?: number;
   max?: number;
+};
+
+type StateFeature = Feature<GeoJSON.Geometry, GeoJSON.GeoJsonProperties> & {
+  id: string;
+  geometry_name: string;
+};
+
+type StateFeatureCollection = FeatureCollection<GeoJSON.Geometry, GeoJSON.GeoJsonProperties> & {
+  features: StateFeature[];
 };
 
 function getDynamicColor(value: number, min: number, max: number) {
@@ -30,9 +41,10 @@ function getDynamicColor(value: number, min: number, max: number) {
 }
 
 export default function ChoroplethMap({ data = [], isLoading = false, isError = false, min = 0, max = 0 }: ChoroplethMapProps) {
-  const [geoJson] = useState<any>(localGeoJson as any);
+  const [geoJson] = useState<StateFeatureCollection>(localGeoJson as StateFeatureCollection);
 
-  const styleFeature = (feature?: any) => {
+  const styleFeature = (feature: Feature<Geometry, GeoJsonProperties> | undefined): PathOptions => {
+    
     if (!feature) return {};
     const stateUf = feature.id;
     const item = data.find(d => d.uf === stateUf);
@@ -42,8 +54,8 @@ export default function ChoroplethMap({ data = [], isLoading = false, isError = 
     return { fillColor, weight: 1, opacity: 1, color: 'white', fillOpacity: 0.7 };
   };
 
-  const onEachFeature = (feature: any, layer: any) => {
-    const stateName = feature.geometry_name;
+  const onEachFeature = (feature: StateFeature, layer: Layer) => {
+    const stateName = feature.geometry_name; 
     const stateUf = feature.id;
     const item = data.find(d => d.uf === stateUf);
     

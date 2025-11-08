@@ -4,11 +4,33 @@ import { getTotalEstabelecimentosPorEstado } from "../../services/establishments
 import { getRegionColor } from "../../utils/colors";
 import { formatNumber } from "../../utils/formatters";
 
+type ChartDataItem = {
+  uf: string;
+  estado: string;
+  estabelecimentos: number;
+  regiao: string;
+  color: string;
+};
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: {
+    payload: ChartDataItem;
+  }[];
+};
+
+type ApiDataItem = {
+  siglaUf: string;
+  nomeUf: string;
+  totalEstabelecimentos: number;
+  regiao: string;
+};
+
 export default function EstablishmentsBarChart() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["estabelecimentos-por-estado"],
     queryFn: () => getTotalEstabelecimentosPorEstado(),
-    select: (data) => {
+    select: (data: ApiDataItem[]) => {
       return data
         .sort((a, b) => b.totalEstabelecimentos - a.totalEstabelecimentos)
         .slice(0, 10)
@@ -18,11 +40,11 @@ export default function EstablishmentsBarChart() {
           estabelecimentos: item.totalEstabelecimentos,
           regiao: item.regiao,
           color: getRegionColor(item.regiao),
-        }));
+        })); 
     },
   });
-
-  const CustomTooltip = ({ active, payload }: any) => {
+  
+  const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       const p = payload[0]?.payload;
       if (!p) return null;
@@ -45,7 +67,7 @@ export default function EstablishmentsBarChart() {
             <YAxis />
             <Tooltip content={<CustomTooltip />} labelFormatter={() => ""} cursor={{ fill: "rgba(148, 163, 184, 0.12)" }} />
             <Bar dataKey="estabelecimentos" radius={[4, 4, 0, 0]}>
-              {data.map((entry: any, index: number) => (
+              {data.map((entry, index: number) => (
                 <Cell key={`cell-${index}`} fill={entry.color || "#004F6D"} fillOpacity={0.85} />
               ))}
             </Bar>

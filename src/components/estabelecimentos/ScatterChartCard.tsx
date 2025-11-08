@@ -3,8 +3,18 @@ import { forwardRef } from 'react';
 
 type Props = {
   title: string;
-  data: { estado: string; regiao?: string; color?: string; populacao: number; estabelecimentos: number }[];
+  data: ChartDataItem[];
 };
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: {
+    payload: ChartDataItem;
+  }[];
+};
+
+type ChartDataItem = { estado: string; regiao?: string; color?: string; populacao: number; estabelecimentos: number }
+
 
 const ScatterChartCard = forwardRef<HTMLDivElement, Props>(({ title, data }, ref) => {
   const enriched = data.map((d) => ({
@@ -66,7 +76,7 @@ const ScatterChartCard = forwardRef<HTMLDivElement, Props>(({ title, data }, ref
             <ZAxis type="number" dataKey="z" range={[20, 72]} />
             <Tooltip
               cursor={{ strokeDasharray: "3 3" }}
-              content={({ active, payload }: any) => {
+              content={({ active, payload }: CustomTooltipProps) => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (

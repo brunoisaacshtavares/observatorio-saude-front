@@ -18,6 +18,7 @@ import {
 import { useState as useReactState } from "react";
 import html2canvas from 'html2canvas';
 import ExportButton from "../components/estabelecimentos/ExportButton";
+import type { EstabelecimentoItem, Paginado } from "../types/cnes";
 
 function useUFData() {
   const { data, isLoading, isError } = useQuery({
@@ -232,7 +233,7 @@ export default function Estabelecimentos() {
     queries: openUFs.map((uf) => ({
       queryKey: ["estabelecimentos-por-uf", uf, ufPageByUF[uf] || 1] as const,
       queryFn: () => getEstabelecimentosPorUFPage(uf, ufPageByUF[uf] || 1, 30),
-      placeholderData: (prev: any) => prev,
+      placeholderData: (prev: Paginado<EstabelecimentoItem> | undefined) => prev,
     })),
   });
 
@@ -246,12 +247,12 @@ export default function Estabelecimentos() {
   }, [openUFs, ufPageByUF]);
 
   const dataByUF = useMemo(() => {
-    const map: Record<string, any> = {};
+    const map: Record<string, EstabelecimentoItem[]> = {};
     openUFs.forEach((uf, idx) => {
-      const d = ufQueries[idx]?.data as { items?: any[] } | undefined;
+      const d = ufQueries[idx]?.data as Paginado<EstabelecimentoItem> | undefined;
       map[uf] = d?.items ?? [];
     });
-    return map as Record<string, any[]>;
+    return map
   }, [openUFs, ufQueries]);
 
   const loadingByUF = useMemo(() => {
@@ -529,7 +530,7 @@ export default function Estabelecimentos() {
               setUfPageByUF((prev) => ({ ...prev, [uf]: 1 }));
             }}
             openUFs={openUFs}
-            dataByUF={dataByUF as any}
+            dataByUF={dataByUF}
             loadingByUF={loadingByUF}
             pageByUF={ufPageByUF}
             hasNextByUF={hasNextByUF}
