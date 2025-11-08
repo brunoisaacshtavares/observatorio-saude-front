@@ -88,12 +88,12 @@ export default function InteractiveMap() {
             key={mapInfo.bounds?.toBBoxString()}
             maxClusterRadius={5}
            >
-            {geoJsonData.features.map((feature) => {
+            {geoJsonData.features.map((feature, index) => {
               
               const longitude = feature.geometry.coordinates[0];
               const latitude = feature.geometry.coordinates[1];
               const { properties } = feature;
-              const uniqueKey = `${latitude}-${longitude}`;
+              const uniqueKey = `${latitude}-${longitude}-${properties.nome}-${index}`;
 
               return (
                 <Marker key={uniqueKey} position={[latitude, longitude]} icon={myIcon}>

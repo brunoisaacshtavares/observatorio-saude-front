@@ -1,6 +1,6 @@
 import { formatNumber } from "../../utils/formatters";
 import { getRegionColor } from "../../utils/colors";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Fragment } from "react";
 import type { EstabelecimentoItem } from "../../types/cnes";
 
 export type Row = {
@@ -59,8 +59,12 @@ export default function StateTable({ rows, openUFs = [], onToggleUF, dataByUF = 
             const dotColor = getDotColorByRegion(r.regiao);
             const selected = openUFs.includes(r.uf);
             return (
-              <>
-                <tr id={`state-row-${r.uf}`} key={r.uf} className={`border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition ${selected ? "bg-slate-50" : ""}`} onClick={() => onToggleUF?.(r.uf)}>
+              <Fragment key={r.uf}>
+                <tr 
+                  id={`state-row-${r.uf}`} 
+                  className={`border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition ${selected ? "bg-slate-50" : ""}`} 
+                  onClick={() => onToggleUF?.(r.uf)}
+                >
                   <td className="py-3 pl-5 pr-3">
                     <div className="flex items-center gap-2">
                       <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dotColor }} aria-hidden />
@@ -129,7 +133,7 @@ export default function StateTable({ rows, openUFs = [], onToggleUF, dataByUF = 
                     </td>
                   </tr>
                 ) : null}
-              </>
+              </Fragment>
             );
           })}
         </tbody>
