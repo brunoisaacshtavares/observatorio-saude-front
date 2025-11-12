@@ -7,7 +7,7 @@ interface YearFilterProps {
   maxYear?: number;
 }
 
-export default function YearFilter({ value, onChange, minYear = 2020, maxYear = new Date().getFullYear() }: YearFilterProps) {
+export default function YearFilter({ value, onChange, minYear = 2007, maxYear = new Date().getFullYear() }: YearFilterProps) {
   const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
 
   return (

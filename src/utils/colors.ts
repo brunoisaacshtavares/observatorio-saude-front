@@ -15,5 +15,4 @@ export function getRegionColor(regiao: string | null | undefined): string {
   return (REGION_COLORS as Record<string, string>)[regiao] ?? "#004F6D";
 }
 
-// Backwards compatibility for misspelled references
 export const getRegonColor = getRegionColor;

@@ -64,7 +64,6 @@ export default function Sobre() {
           <TeamMemberCard name="Enzo" role="UX/UI" expertise="Experiência do Usuário" icon={<UserRound />} />
           <TeamMemberCard name="Otávio" role="DBA" expertise="Administração de Banco de Dados" icon={<UserRound />} />
           <TeamMemberCard name="Murilo" role="Dev FullStack" expertise="Desenvolvimento Full-Stack" icon={<UserRound />} />
-          <TeamMemberCard name="Rafael" role="Project Manager" expertise="Gestão de Projetos" icon={<UserRound />} />
         </div>
       </section>
 

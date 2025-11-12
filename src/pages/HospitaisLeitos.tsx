@@ -273,14 +273,12 @@ export default function HospitaisLeitos() {
         </div>
       )}
 
-      {/* Filtros de Ano e Mês */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <YearFilter value={selectedYear} onChange={setSelectedYear} minYear={2020} />
+        <YearFilter value={selectedYear} onChange={setSelectedYear} minYear={2007} />
         <MonthFilter value={selectedMonth} onChange={setSelectedMonth} year={selectedYear} />
         <BedTypeFilter value={selectedBedType} onChange={setSelectedBedType} options={bedTypeOptions} />
       </div>
 
-      {/* Cards de Indicadores - 3 cards maiores */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <BedsStatCard label="Total de Leitos" value={overview?.totalLeitos ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Em todo o Brasil"} icon={<Bed />} iconColor="blue" isLoading={isLoadingOverview} />
         <BedsStatCard label="Leitos SUS" value={overview?.leitosSus ?? 0} sublabel={selectedBedType ? "Do tipo selecionado" : "Sistema Único de Saúde"} icon={<Ambulance />} iconColor="green" isLoading={isLoadingOverview} />
