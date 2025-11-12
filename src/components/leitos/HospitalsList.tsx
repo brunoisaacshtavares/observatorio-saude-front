@@ -1,4 +1,4 @@
-import { MapPin } from "lucide-react";
+import { MapPin, Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 type Hospital = {
@@ -21,9 +21,11 @@ type Props = {
   ufOptions?: UfOption[];
   selectedUf?: string;
   onChangeUf?: (uf?: string) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
 };
 
-export default function HospitalsList({ hospitals, isLoading = false, page, totalPages, onPrev, onNext, ufOptions = [], selectedUf, onChangeUf }: Props) {
+export default function HospitalsList({ hospitals, isLoading = false, page, totalPages, onPrev, onNext, ufOptions = [], selectedUf, onChangeUf, searchQuery, onSearchChange }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -39,6 +41,11 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
           <h3 className="text-base font-semibold text-slate-900">Principais Hospitais</h3>
           <div className="h-8 w-40 bg-slate-100 rounded" />
         </div>
+
+        <div className="relative mb-4">
+          <div className="h-10 w-full bg-slate-100 rounded-lg animate-pulse"></div>
+        </div>
+
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse">
@@ -67,6 +74,17 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Pesquisar por nome ou código CNES..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+        />
       </div>
 
       <div ref={listRef} className="space-y-3 max-h-96 overflow-y-auto pr-1">
