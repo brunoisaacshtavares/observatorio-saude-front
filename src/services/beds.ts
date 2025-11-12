@@ -122,3 +122,106 @@ export async function getBedsByRegion(params: { year: number; month?: number; ti
   const { data } = await api.get<BedsByRegion[]>(`/api/v1/Leitos/indicadores-por-regiao?${qs}`);
   return data;
 }
+
+export type Capacidade = {
+  totalLeitos: number;
+  leitosSus: number;
+  qtdUtiTotalExist: number;
+  qtdUtiTotalSus: number;
+  qtdUtiAdultoExist: number;
+  qtdUtiAdultoSus: number;
+  qtdUtiPediatricoExist: number;
+  qtdUtiPediatricoSus: number;
+  qtdUtiNeonatalExist: number;
+  qtdUtiNeonatalSus: number;
+  qtdUtiQueimadoExist: number;
+  qtdUtiQueimadoSus: number;
+  qtdUtiCoronarianaExist: number;
+  qtdUtiCoronarianaSus: number;
+};
+
+export type Localizacao = {
+  uf: string;
+  enderecoCompleto: string;
+};
+
+export type Servicos = {
+  fazAtendimentoAmbulatorialSus: boolean;
+  temCentroCirurgico: boolean;
+  temCentroObstetrico: boolean;
+  temCentroNeonatal: boolean;
+  fazAtendimentoHospitalar: boolean;
+  temServicoApoio: boolean;
+  fazAtendimentoAmbulatorial: boolean;
+};
+
+export type Organizacao = {
+  tipoUnidade: number;
+  tipoGestao: string;
+  descricaoEsferaAdministrativa: string;
+  codAtividade: number;
+};
+
+export type Turno = {
+  codTurnoAtendimento: number;
+  dscrTurnoAtendimento: string;
+};
+
+export type LeitoItemDetalhado = {
+  codCnes: number;
+  nomeEstabelecimento: string;
+  dscrTipoUnidade: string;
+  capacidade: Capacidade;
+  localizacao: Localizacao;
+  servicos: Servicos;
+  organizacao: Organizacao;
+  turno: Turno;
+};
+
+export type LeitosPageDetailed = {
+  items: LeitoItemDetalhado[];
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+export async function getLeitosPageDetailed(params: { pageNumber?: number; pageSize?: number; ufs?: string[]; tipoLeito?: string; year?: number; month?: number; codCnes?: number;
+  nomeEstabelecimento?: string; }) {
+  const search = new URLSearchParams();
+  if (params.pageNumber !== undefined) search.append("PageNumber", String(params.pageNumber));
+  if (params.pageSize !== undefined) search.append("PageSize", String(params.pageSize));
+  if (params.ufs && params.ufs.length > 0) {
+    params.ufs.forEach((uf) => search.append("Uf", uf));
+  }
+  if (params.tipoLeito) {
+    search.append("Tipo", params.tipoLeito);
+  }
+  search.append("Ano", String(params.year));
+
+  if (params.month) {
+    const monthStr = String(params.month).padStart(2, "0");
+    const anomes = `${params.year}${monthStr}`;
+    search.append("Anomes", anomes);
+  }
+
+  if (params.codCnes !== undefined) {
+    search.append("CodCnes", String(params.codCnes));
+  }
+
+  if (params.nomeEstabelecimento) {
+    search.append("Nome", params.nomeEstabelecimento);
+  }
+
+  const qs = search.toString();
+  const { data } = await api.get<string | LeitosPageDetailed>(`/api/v1/Leitos/detalhes?${qs}`, { headers: { accept: "text/plain" } });
+
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as LeitosPageDetailed;
+    } catch {
+      return { items: [], currentPage: 1, pageSize: params.pageSize || 10, totalCount: 0, totalPages: 0 } as LeitosPageDetailed;
+    }
+  }
+  return data as LeitosPageDetailed;
+}

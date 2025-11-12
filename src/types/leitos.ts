@@ -49,3 +49,48 @@ export type BedType = {
   id: string;
   label: string;
 };
+
+export type HospitalDetalhado = {
+  codCnes: number;
+  nomeEstabelecimento: string;
+  dscrTipoUnidade: string;
+  capacidade: {
+    totalLeitos: number;
+    leitosSus: number;
+    qtdUtiTotalExist: number;
+    qtdUtiTotalSus: number;
+    qtdUtiAdultoExist: number;
+    qtdUtiAdultoSus: number;
+    qtdUtiPediatricoExist: number;
+    qtdUtiPediatricoSus: number;
+    qtdUtiNeonatalExist: number;
+    qtdUtiNeonatalSus: number;
+    qtdUtiQueimadoExist: number;
+    qtdUtiQueimadoSus: number;
+    qtdUtiCoronarianaExist: number;
+    qtdUtiCoronarianaSus: number;
+  };
+  localizacao: {
+    uf: string;
+    enderecoCompleto: string;
+  };
+  servicos: {
+    fazAtendimentoAmbulatorialSus: boolean;
+    temCentroCirurgico: boolean;
+    temCentroObstetrico: boolean;
+    temCentroNeonatal: boolean;
+    fazAtendimentoHospitalar: boolean;
+    temServicoApoio: boolean;
+    fazAtendimentoAmbulatorial: boolean;
+  };
+  organizacao: {
+    tipoUnidade: number;
+    tipoGestao: string;
+    descricaoEsferaAdministrativa: string;
+    codAtividade: number;
+  };
+  turno: {
+    codTurnoAtendimento: number;
+    dscrTurnoAtendimento: string;
+  };
+};

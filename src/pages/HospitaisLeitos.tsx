@@ -10,13 +10,23 @@ import YearFilter from "../components/leitos/YearFilter";
 import MonthFilter from "../components/leitos/MonthFilter";
 import { Bed, AlertCircle, Ambulance } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBedsByState, getBedsIndicators, getLeitosPage, getBedsByRegion } from "../services/beds";
-import type { LeitoItem } from "../types/leitos";
+import {
+  getBedsByState,
+  getBedsIndicators,
+  getBedsByRegion,
+  getLeitosPageDetailed,
+} from "../services/beds";
+import { useDebounce } from "../hooks/useDebounce";
+import HospitalDetailModal from "../components/leitos/HospitalDetailModal";
+import type { HospitalDetalhado } from "../types/leitos";
 
 export default function HospitaisLeitos() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedBedType, setSelectedBedType] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const [selectedHospital, setSelectedHospital] = useState<HospitalDetalhado | null>(null);
 
   const {
     data: overview,
@@ -88,16 +98,46 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingLeitos,
     error: leitosError,
   } = useQuery({
-    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
-    queryFn: () => 
-      getLeitosPage({ 
-        pageNumber: page, 
-        pageSize, 
-        ufs: selectedUf ? [selectedUf] : undefined, 
+    queryKey: ["leitosDetailed", { page, pageSize, debouncedSearchQuery: "", selectedYear, selectedMonth, selectedBedType, selectedUf }],
+    queryFn: () =>
+      getLeitosPageDetailed({
+        pageNumber: page,
+        pageSize,
+        ufs: selectedUf ? [selectedUf] : undefined,
         tipoLeito: selectedBedType || undefined,
-        year: selectedYear, 
-        month: selectedMonth ?? undefined
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
+        codCnes: undefined,
+        nomeEstabelecimento: undefined,
       }),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !debouncedSearchQuery,
+  });
+
+  const {
+    data: leitosPageDetailed,
+    isLoading: isLoadingLeitosDetailed,
+    error: leitosErrorDetailed,
+  } = useQuery({
+    queryKey: ["leitosDetailed", { page, pageSize, debouncedSearchQuery, selectedYear, selectedMonth, selectedBedType, selectedUf }],
+    queryFn: () => {
+      const isCnesSearch = /^\d+$/.test(debouncedSearchQuery);
+      return getLeitosPageDetailed({
+        pageNumber: page,
+        pageSize,
+        ufs: selectedUf ? [selectedUf] : undefined,
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
+        tipoLeito: selectedBedType || undefined,
+        codCnes: isCnesSearch ? Number(debouncedSearchQuery) : undefined,
+        nomeEstabelecimento: !isCnesSearch ? debouncedSearchQuery : undefined,
+      });
+    },
+    enabled: !!debouncedSearchQuery,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -105,67 +145,103 @@ export default function HospitaisLeitos() {
     retry: 1,
   });
 
+  const isSearching = !!debouncedSearchQuery;
+
+  const activeData = isSearching ? leitosPageDetailed : leitosPage;
+  const isLoadingList = isSearching ? isLoadingLeitosDetailed : isLoadingLeitos;
+  const listError = isSearching ? leitosErrorDetailed : leitosError;
+
+  const handleHospitalClick = (hospitalId: string) => {
+    const hospitalData = activeData?.items.find(
+      (h) => String(h.codCnes) === hospitalId
+    );
+    setSelectedHospital(hospitalData ?? null);
+  };
+  
   const hospitals = useMemo(() => {
-    const list = (leitosPage?.items || []) as LeitoItem[];
+    const list = (activeData?.items || []);
     return list.map((h, idx) => ({
       id: String(h.codCnes ?? `${page}-${idx}`),
       nome: h.nomeEstabelecimento ?? "Estabelecimento",
-      localizacao: `${h.enderecoCompleto ?? ""}${h.localizacaoUf ? ` - ${h.localizacaoUf}` : ""}`.trim(),
-      leitosTotal: h.totalLeitos ?? 0,
-      leitosSus: h.leitosSus ?? 0,
+      localizacao: `${h.localizacao?.enderecoCompleto ?? ""}${h.localizacao?.uf ? ` - ${h.localizacao.uf}` : ""}`.trim(),
+      leitosTotal: h.capacidade?.totalLeitos ?? 0,
+      leitosSus: h.capacidade?.leitosSus ?? 0,
     }));
-  }, [leitosPage, page]);
+  }, [activeData, page]);
 
-useEffect(() => {
+  useEffect(() => {
     const nextPage = page + 1;
     const prevPage = page - 1;
-    const totalPages = leitosPage?.totalPages || undefined;
+    const totalPages = activeData?.totalPages || undefined;
 
     const queryOptions = {
-      page: nextPage, 
-      pageSize, 
-      selectedUf, 
+      pageSize,
+      selectedUf,
       selectedBedType,
       selectedYear,
       selectedMonth
     };
 
     const queryFnParams = {
-      pageSize, 
-      ufs: selectedUf ? [selectedUf] : undefined, 
+      pageSize,
+      ufs: selectedUf ? [selectedUf] : undefined,
       tipoLeito: selectedBedType || undefined,
-      year: selectedYear, 
+      year: selectedYear,
       month: selectedMonth ?? undefined
     };
 
+    const isCnesSearch = /^\d+$/.test(debouncedSearchQuery);
+    const searchKeyParams = { ...queryOptions, debouncedSearchQuery };
+    const searchFnParams = {
+      ...queryFnParams,
+      codCnes: isCnesSearch ? Number(debouncedSearchQuery) : undefined,
+      nomeEstabelecimento: !isCnesSearch ? debouncedSearchQuery : undefined,
+    };
+
+    const prefetch = (pageNum: number) => {
+      if (isSearching) {
+        queryClient.prefetchQuery({
+          queryKey: ["leitosDetailed", { ...searchKeyParams, page: pageNum }],
+          queryFn: () => getLeitosPageDetailed({ ...searchFnParams, pageNumber: pageNum }),
+          staleTime: 60 * 1000,
+        });
+      } else {
+        queryClient.prefetchQuery({
+          queryKey: ["leitosDetailed", { ...queryOptions, page: pageNum, debouncedSearchQuery: "" }],
+          queryFn: () =>
+            getLeitosPageDetailed({
+              ...queryFnParams,
+              pageNumber: pageNum,
+              codCnes: undefined,
+              nomeEstabelecimento: undefined,
+            }),
+          staleTime: 60 * 1000,
+        });
+      }
+    };
+
     if (!totalPages || nextPage <= totalPages) {
-      queryClient.prefetchQuery({ 
-        queryKey: ["leitos", { ...queryOptions, page: nextPage }],
-        queryFn: () => getLeitosPage({ ...queryFnParams, pageNumber: nextPage }),
-        staleTime: 60 * 1000 
-      });
+      prefetch(nextPage);
     }
     if (prevPage >= 1) {
-      queryClient.prefetchQuery({ 
-        queryKey: ["leitos", { ...queryOptions, page: prevPage }],
-        queryFn: () => getLeitosPage({ ...queryFnParams, pageNumber: prevPage }),
-        staleTime: 60 * 1000 
-      });
+      prefetch(prevPage);
     }
   }, [
-    page, 
-    pageSize, 
-    leitosPage?.totalPages, 
-    selectedUf, 
-    selectedBedType, 
+    page,
+    pageSize,
+    activeData?.totalPages,
+    selectedUf,
+    selectedBedType,
     selectedYear,
     selectedMonth,
-    queryClient
+    debouncedSearchQuery,
+    isSearching,
+    queryClient,
   ]);
 
   useEffect(() => {
     setPage(1);
-  }, [selectedUf, selectedBedType, selectedYear, selectedMonth]);
+  }, [selectedUf, selectedBedType, selectedYear, selectedMonth, debouncedSearchQuery]);
 
   const ufOptions = useMemo(() => {
     return stateData.map((s) => ({ value: s.uf, label: `${s.uf} - ${s.estado}` })).sort((a, b) => a.label.localeCompare(b.label));
@@ -180,19 +256,19 @@ useEffect(() => {
       { value: "UTI_CORONARIANA", label: "UTI Coronariana" },
     ];
   }, []);
-
+  
   return (
     <div className="space-y-6">
       <PageHeader title="Hospitais e Leitos" description="Monitoramento de capacidade hospitalar" />
 
-      {(overviewError || byStateError || leitosError || byRegionError) && (
+      {(overviewError || byStateError || listError || byRegionError) && (
         <div className="card p-4 border border-red-200 bg-red-50 text-red-700">
           <p className="text-sm font-medium">Falha ao carregar dados de leitos.</p>
           <p className="text-xs mt-1">
             {overviewError ? "Indicadores gerais indisponíveis. " : ""}
             {byStateError ? "Indicadores por estado indisponíveis. " : ""}
             {byRegionError ? "Indicadores por região indisponíveis. " : ""}
-            {leitosError ? " Dados detalhados de leitos indisponíveis." : ""}
+            {listError ? " Dados detalhados de leitos indisponíveis." : ""}
           </p>
         </div>
       )}
@@ -217,9 +293,26 @@ useEffect(() => {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <HospitalsList hospitals={hospitals} isLoading={isLoadingLeitos} page={page} totalPages={leitosPage?.totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(leitosPage?.totalPages || p + 1, p + 1))} ufOptions={ufOptions} selectedUf={selectedUf} onChangeUf={(uf) => setSelectedUf(uf)} />
+        <HospitalsList 
+          hospitals={hospitals} 
+          isLoading={isLoadingList} 
+          page={page} 
+          totalPages={activeData?.totalPages} 
+          onPrev={() => setPage((p) => Math.max(1, p - 1))} 
+          onNext={() => setPage((p) => Math.min(activeData?.totalPages || p + 1, p + 1))} 
+          ufOptions={ufOptions} 
+          selectedUf={selectedUf} 
+          onChangeUf={(uf) => setSelectedUf(uf)} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery}
+          onHospitalClick={handleHospitalClick}
+        />
         <RegionalAnalysis data={regionalData} isLoading={isLoadingRegional} isFiltered={!!selectedBedType} />
       </div>
+      <HospitalDetailModal
+        hospital={selectedHospital}
+        onClose={() => setSelectedHospital(null)}
+      />
     </div>
   );
 }
