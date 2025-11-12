@@ -23,9 +23,24 @@ type Props = {
   onChangeUf?: (uf?: string) => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  onHospitalClick?: (hospitalId: string) => void;
 };
 
-export default function HospitalsList({ hospitals, isLoading = false, page, totalPages, onPrev, onNext, ufOptions = [], selectedUf, onChangeUf, searchQuery, onSearchChange }: Props) {
+export default function HospitalsList({ 
+  hospitals, 
+  isLoading = false, 
+  page, 
+  totalPages, 
+  onPrev, 
+  onNext, 
+  ufOptions = [], 
+  selectedUf, 
+  onChangeUf, 
+  searchQuery, 
+  onSearchChange,
+  onHospitalClick
+}: Props) {
+  
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -89,7 +104,11 @@ export default function HospitalsList({ hospitals, isLoading = false, page, tota
 
       <div ref={listRef} className="space-y-3 max-h-96 overflow-y-auto pr-1">
         {hospitals.map((hospital) => (
-          <div key={hospital.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
+          <div 
+            key={hospital.id} 
+            className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+            onClick={() => onHospitalClick?.(hospital.id)}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-semibold text-slate-900 line-clamp-2">{hospital.nome}</h4>

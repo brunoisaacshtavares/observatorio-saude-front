@@ -17,6 +17,8 @@ import {
   getLeitosPageDetailed,
 } from "../services/beds";
 import { useDebounce } from "../hooks/useDebounce";
+import HospitalDetailModal from "../components/leitos/HospitalDetailModal";
+import type { HospitalDetalhado } from "../types/leitos";
 
 export default function HospitaisLeitos() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -24,6 +26,7 @@ export default function HospitaisLeitos() {
   const [selectedBedType, setSelectedBedType] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const [selectedHospital, setSelectedHospital] = useState<HospitalDetalhado | null>(null);
 
   const {
     data: overview,
@@ -148,6 +151,13 @@ export default function HospitaisLeitos() {
   const isLoadingList = isSearching ? isLoadingLeitosDetailed : isLoadingLeitos;
   const listError = isSearching ? leitosErrorDetailed : leitosError;
 
+  const handleHospitalClick = (hospitalId: string) => {
+    const hospitalData = activeData?.items.find(
+      (h) => String(h.codCnes) === hospitalId
+    );
+    setSelectedHospital(hospitalData ?? null);
+  };
+  
   const hospitals = useMemo(() => {
     const list = (activeData?.items || []);
     return list.map((h, idx) => ({
@@ -246,7 +256,7 @@ export default function HospitaisLeitos() {
       { value: "UTI_CORONARIANA", label: "UTI Coronariana" },
     ];
   }, []);
-
+  
   return (
     <div className="space-y-6">
       <PageHeader title="Hospitais e Leitos" description="Monitoramento de capacidade hospitalar" />
@@ -294,10 +304,15 @@ export default function HospitaisLeitos() {
           selectedUf={selectedUf} 
           onChangeUf={(uf) => setSelectedUf(uf)} 
           searchQuery={searchQuery} 
-          onSearchChange={setSearchQuery} 
+          onSearchChange={setSearchQuery}
+          onHospitalClick={handleHospitalClick}
         />
         <RegionalAnalysis data={regionalData} isLoading={isLoadingRegional} isFiltered={!!selectedBedType} />
       </div>
+      <HospitalDetailModal
+        hospital={selectedHospital}
+        onClose={() => setSelectedHospital(null)}
+      />
     </div>
   );
 }
