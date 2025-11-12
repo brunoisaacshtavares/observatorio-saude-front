@@ -10,8 +10,12 @@ import YearFilter from "../components/leitos/YearFilter";
 import MonthFilter from "../components/leitos/MonthFilter";
 import { Bed, AlertCircle, Ambulance } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBedsByState, getBedsIndicators, getLeitosPage, getBedsByRegion, getLeitosPageDetailed } from "../services/beds";
-import type { LeitoItem } from "../types/leitos";
+import {
+  getBedsByState,
+  getBedsIndicators,
+  getBedsByRegion,
+  getLeitosPageDetailed,
+} from "../services/beds";
 import { useDebounce } from "../hooks/useDebounce";
 
 export default function HospitaisLeitos() {
@@ -91,15 +95,17 @@ export default function HospitaisLeitos() {
     isLoading: isLoadingLeitos,
     error: leitosError,
   } = useQuery({
-    queryKey: ["leitos", { page, pageSize, selectedUf, selectedBedType, selectedYear, selectedMonth }],
-    queryFn: () => 
-      getLeitosPage({ 
-        pageNumber: page, 
-        pageSize, 
-        ufs: selectedUf ? [selectedUf] : undefined, 
+    queryKey: ["leitosDetailed", { page, pageSize, debouncedSearchQuery: "", selectedYear, selectedMonth, selectedBedType, selectedUf }],
+    queryFn: () =>
+      getLeitosPageDetailed({
+        pageNumber: page,
+        pageSize,
+        ufs: selectedUf ? [selectedUf] : undefined,
         tipoLeito: selectedBedType || undefined,
-        year: selectedYear, 
-        month: selectedMonth ?? undefined
+        year: selectedYear,
+        month: selectedMonth ?? undefined,
+        codCnes: undefined,
+        nomeEstabelecimento: undefined,
       }),
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -120,7 +126,7 @@ export default function HospitaisLeitos() {
       return getLeitosPageDetailed({
         pageNumber: page,
         pageSize,
-        ufs: selectedUf ? [selectedUf] : undefined, 
+        ufs: selectedUf ? [selectedUf] : undefined,
         year: selectedYear,
         month: selectedMonth ?? undefined,
         tipoLeito: selectedBedType || undefined,
@@ -137,41 +143,40 @@ export default function HospitaisLeitos() {
   });
 
   const isSearching = !!debouncedSearchQuery;
-  
+
   const activeData = isSearching ? leitosPageDetailed : leitosPage;
   const isLoadingList = isSearching ? isLoadingLeitosDetailed : isLoadingLeitos;
   const listError = isSearching ? leitosErrorDetailed : leitosError;
 
   const hospitals = useMemo(() => {
-    const list = (activeData?.items || []) as LeitoItem[];
+    const list = (activeData?.items || []);
     return list.map((h, idx) => ({
       id: String(h.codCnes ?? `${page}-${idx}`),
       nome: h.nomeEstabelecimento ?? "Estabelecimento",
-      localizacao: `${h.enderecoCompleto ?? ""}${h.localizacaoUf ? ` - ${h.localizacaoUf}` : ""}`.trim(),
-      leitosTotal: h.totalLeitos ?? 0,
-      leitosSus: h.leitosSus ?? 0,
+      localizacao: `${h.localizacao?.enderecoCompleto ?? ""}${h.localizacao?.uf ? ` - ${h.localizacao.uf}` : ""}`.trim(),
+      leitosTotal: h.capacidade?.totalLeitos ?? 0,
+      leitosSus: h.capacidade?.leitosSus ?? 0,
     }));
   }, [activeData, page]);
 
-useEffect(() => {
+  useEffect(() => {
     const nextPage = page + 1;
     const prevPage = page - 1;
     const totalPages = activeData?.totalPages || undefined;
 
     const queryOptions = {
-      page: nextPage, 
-      pageSize, 
-      selectedUf, 
+      pageSize,
+      selectedUf,
       selectedBedType,
       selectedYear,
       selectedMonth
     };
 
     const queryFnParams = {
-      pageSize, 
-      ufs: selectedUf ? [selectedUf] : undefined, 
+      pageSize,
+      ufs: selectedUf ? [selectedUf] : undefined,
       tipoLeito: selectedBedType || undefined,
-      year: selectedYear, 
+      year: selectedYear,
       month: selectedMonth ?? undefined
     };
 
@@ -185,16 +190,22 @@ useEffect(() => {
 
     const prefetch = (pageNum: number) => {
       if (isSearching) {
-        queryClient.prefetchQuery({ 
+        queryClient.prefetchQuery({
           queryKey: ["leitosDetailed", { ...searchKeyParams, page: pageNum }],
           queryFn: () => getLeitosPageDetailed({ ...searchFnParams, pageNumber: pageNum }),
-          staleTime: 60 * 1000 
+          staleTime: 60 * 1000,
         });
       } else {
-        queryClient.prefetchQuery({ 
-          queryKey: ["leitos", { ...queryOptions, page: pageNum }],
-          queryFn: () => getLeitosPage({ ...queryFnParams, pageNumber: pageNum }),
-          staleTime: 60 * 1000 
+        queryClient.prefetchQuery({
+          queryKey: ["leitosDetailed", { ...queryOptions, page: pageNum, debouncedSearchQuery: "" }],
+          queryFn: () =>
+            getLeitosPageDetailed({
+              ...queryFnParams,
+              pageNumber: pageNum,
+              codCnes: undefined,
+              nomeEstabelecimento: undefined,
+            }),
+          staleTime: 60 * 1000,
         });
       }
     };
@@ -206,16 +217,16 @@ useEffect(() => {
       prefetch(prevPage);
     }
   }, [
-    page, 
-    pageSize, 
-    activeData?.totalPages, 
-    selectedUf, 
-    selectedBedType, 
+    page,
+    pageSize,
+    activeData?.totalPages,
+    selectedUf,
+    selectedBedType,
     selectedYear,
     selectedMonth,
-    debouncedSearchQuery, 
+    debouncedSearchQuery,
     isSearching,
-    queryClient
+    queryClient,
   ]);
 
   useEffect(() => {
@@ -272,7 +283,19 @@ useEffect(() => {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <HospitalsList hospitals={hospitals} isLoading={isLoadingList} page={page} totalPages={activeData?.totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(activeData?.totalPages || p + 1, p + 1))} ufOptions={ufOptions} selectedUf={selectedUf} onChangeUf={(uf) => setSelectedUf(uf)} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+        <HospitalsList 
+          hospitals={hospitals} 
+          isLoading={isLoadingList} 
+          page={page} 
+          totalPages={activeData?.totalPages} 
+          onPrev={() => setPage((p) => Math.max(1, p - 1))} 
+          onNext={() => setPage((p) => Math.min(activeData?.totalPages || p + 1, p + 1))} 
+          ufOptions={ufOptions} 
+          selectedUf={selectedUf} 
+          onChangeUf={(uf) => setSelectedUf(uf)} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+        />
         <RegionalAnalysis data={regionalData} isLoading={isLoadingRegional} isFiltered={!!selectedBedType} />
       </div>
     </div>

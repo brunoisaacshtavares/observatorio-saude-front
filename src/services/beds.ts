@@ -210,7 +210,7 @@ export async function getLeitosPageDetailed(params: { pageNumber?: number; pageS
   }
 
   if (params.nomeEstabelecimento) {
-    search.append("NomeEstabelecimento", params.nomeEstabelecimento);
+    search.append("Nome", params.nomeEstabelecimento);
   }
 
   const qs = search.toString();
