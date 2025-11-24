@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Building, Bed, Stethoscope, Clock, CheckCircle, XCircle, TrendingUp, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
@@ -143,6 +144,22 @@ const InfoItem: React.FC<{ label: string; value: string | number }> = ({ label, 
     <span className="text-slate-800 font-medium">{value}</span>
   </div>
 );
+const CapacityItem: React.FC<{ label: string; total: number; sus: number }> = ({ label, total, sus }) => (
+  <div className="flex flex-col border-b border-slate-50 pb-2 last:border-0">
+    <span className="text-xs text-slate-500 mb-1.5">{label}</span>
+    <div className="flex items-center gap-4">
+      <div className="flex flex-col">
+        <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
+        <span className="text-sm font-semibold text-slate-900">{total}</span>
+      </div>
+      <div className="w-px h-8 bg-slate-200"></div>
+      <div className="flex flex-col">
+        <span className="text-[10px] uppercase font-bold text-green-600">SUS</span>
+        <span className="text-sm font-semibold text-green-700">{sus}</span>
+      </div>
+    </div>
+  </div>
+);
 
 const ServiceBadge: React.FC<{ label: string; available: boolean }> = ({ label, available }) => (
   <div className={`flex items-center gap-2 py-1.5 px-3 rounded-md border ${available ? "bg-green-50 border-green-100 text-green-700" : "bg-red-50 border-red-100 text-red-700"}`}>
@@ -153,15 +170,26 @@ const ServiceBadge: React.FC<{ label: string; available: boolean }> = ({ label, 
 
 export default function HospitalDetailModal({ hospital, onClose }: Props) {
   const [historyRange, setHistoryRange] = useState<number>(5);
+  const [mounted, setMounted] = useState(false);
 
-  if (!hospital) return null;
+  useEffect(() => {
+    setMounted(true);
+    if (hospital) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [hospital]);
+
+  if (!hospital || !mounted) return null;
 
   const { capacidade, localizacao, servicos, organizacao, turno } = hospital;
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-300"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-300"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -241,11 +269,26 @@ export default function HospitalDetailModal({ hospital, onClose }: Props) {
                         <p className="text-2xl font-bold text-green-900">{capacidade.leitosSus}</p>
                     </div>
                 </div>
-                
-                <InfoItem label="UTI Total (Existentes / SUS)" value={`${capacidade.qtdUtiTotalExist} / ${capacidade.qtdUtiTotalSus}`} />
-                <InfoItem label="UTI Adulto (Exist / SUS)" value={`${capacidade.qtdUtiAdultoExist} / ${capacidade.qtdUtiAdultoSus}`} />
-                <InfoItem label="UTI Pediátrico (Exist / SUS)" value={`${capacidade.qtdUtiPediatricoExist} / ${capacidade.qtdUtiPediatricoSus}`} />
-                <InfoItem label="UTI Neonatal (Exist / SUS)" value={`${capacidade.qtdUtiNeonatalExist} / ${capacidade.qtdUtiNeonatalSus}`} />
+                <CapacityItem 
+                    label="UTI Total" 
+                    total={capacidade.qtdUtiTotalExist} 
+                    sus={capacidade.qtdUtiTotalSus} 
+                />
+                <CapacityItem 
+                    label="UTI Adulto" 
+                    total={capacidade.qtdUtiAdultoExist} 
+                    sus={capacidade.qtdUtiAdultoSus} 
+                />
+                <CapacityItem 
+                    label="UTI Pediátrico" 
+                    total={capacidade.qtdUtiPediatricoExist} 
+                    sus={capacidade.qtdUtiPediatricoSus} 
+                />
+                <CapacityItem 
+                    label="UTI Neonatal" 
+                    total={capacidade.qtdUtiNeonatalExist} 
+                    sus={capacidade.qtdUtiNeonatalSus} 
+                />
               </DetailSection>
 
               <DetailSection title="Serviços Disponíveis" icon={<Stethoscope size={18} />} fullWidth>
@@ -266,6 +309,7 @@ export default function HospitalDetailModal({ hospital, onClose }: Props) {
           Dados detalhados do estabelecimento CNES {hospital.nomeEstabelecimento} - {hospital.codCnes}.
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
