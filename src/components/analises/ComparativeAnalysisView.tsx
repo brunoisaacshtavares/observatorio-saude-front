@@ -18,11 +18,12 @@ type ComparisonData = {
   byRegion: BedsByRegion[];
 };
 
+const REGIONS = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"];
+
 export default function ComparativeAnalysisView() {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [selectedBedType, setSelectedBedType] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const regions = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]
 
   const chartsContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -101,10 +102,10 @@ export default function ComparativeAnalysisView() {
     const years = data.map((d) => d.year).sort((a, b) => a - b);
 
     return years.map((year) => {
-      const row: { [key: string]: any } = { ano: year };
+      const row: Record<string, number> = { ano: year };
       const yearData = data.find((d) => d.year === year);
 
-      regions.forEach((regionName) => {
+      REGIONS.forEach((regionName) => {
         const regionStats = yearData?.byRegion.find(
           (r) => r.nomeRegiao === regionName
         );
@@ -113,7 +114,7 @@ export default function ComparativeAnalysisView() {
 
       return row;
     });
-  }, [data, regions]);
+  }, [data]); 
 
   const tableData = useMemo(() => {
     const sortedData = [...data].sort((a, b) => a.year - b.year);
@@ -132,7 +133,7 @@ export default function ComparativeAnalysisView() {
 
     const regionTable = {
       headers: ["Região", ...sortedYears.map((y) => `Leitos ${y}`)],
-      rows: regions.map((regionName) => {
+      rows: REGIONS.map((regionName) => {
         const row: (string | number)[] = [regionName];
         sortedData.forEach((d) => {
           const regionStats = d.byRegion.find(

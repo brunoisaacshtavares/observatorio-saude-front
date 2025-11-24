@@ -3,7 +3,7 @@ const regionColors = ["#3b82f6", "#16a34a", "#ef4444", "#f97316", "#8b5cf6"];
 const regions = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"];
 
 type Props = {
-  data: { [key: string]: any }[];
+  data: Record<string, number | string>[];
 };
 
 export default function RegionalTrendChart({ data }: Props) {
