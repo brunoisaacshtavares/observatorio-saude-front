@@ -8,5 +8,11 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="module">
+      import Chatbox from "https://cdn.jsdelivr.net/npm/@chatvolt/embeds@latest/dist/chatbox/index.js";
+      const widget = await Chatbox.initBubble({
+        agentId: "cmigggfi4026jge5uob1x25wc",
+      });
+    </script>
   </body>
 </html>
