@@ -21,35 +21,35 @@ A aplicação foi desenvolvida com foco em UX/UI limpa, responsividade e perform
 Painel com os principais KPIs do Brasil, incluindo mapas de calor para cobertura de leitos e um **Assistente Virtual** integrado para responder dúvidas em linguagem natural.
 <br>
 <div align="center">
-  <img src="./assets/dashboard.jpg" alt="Visão Geral e Chatbot" width="100%">
+  <img src="./assets/dashboard.png alt="Visão Geral e Chatbot" width="100%">
 </div>
 
 ### 2. Rede de Estabelecimentos
 Análise detalhada da infraestrutura física. Inclui rankings estaduais, relação habitantes/estabelecimento e filtros geográficos avançados.
 <br>
 <div align="center">
-  <img src="./assets/estabelecimentos.jpg" alt="Estabelecimentos de Saúde" width="100%">
+  <img src="./assets/estabelecimentos.png" alt="Estabelecimentos de Saúde" width="100%">
 </div>
 
 ### 3. Capacidade Hospitalar (Leitos)
 Monitoramento profundo da ocupação. Gráficos comparativos (SUS vs. Privado), Top 10 estados e busca detalhada por hospitais específicos.
 <br>
 <div align="center">
-  <img src="./assets/hospitais-leitos.jpg" alt="Hospitais e Leitos" width="100%">
+  <img src="./assets/hospitais-leitos.png" alt="Hospitais e Leitos" width="100%">
 </div>
 
 ### 4. Análises Históricas e Tendências
 Ferramentas de Business Intelligence (BI) para estudo de séries temporais (2021-2024), permitindo identificar a evolução ou retração da rede de saúde.
 <br>
 <div align="center">
-  <img src="./assets/analises.jpg" alt="Análises e Tendências" width="100%">
+  <img src="./assets/analises.png" alt="Análises e Tendências" width="100%">
 </div>
 
 ### 5. Transparência Institucional
 Página dedicada à transparência, listando as fontes de dados oficiais (CNES, OpenDataSUS) e a equipe responsável pelo desenvolvimento.
 <br>
 <div align="center">
-  <img src="./assets/sobre.jpg" alt="Sobre o Projeto" width="100%">
+  <img src="./assets/sobre.png" alt="Sobre o Projeto" width="100%">
 </div>
 
 ---
