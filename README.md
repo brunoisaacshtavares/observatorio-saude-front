@@ -1,69 +1,109 @@
-# React + TypeScript + Vite
+-----
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# 🏥 Observatório Saúde - Frontend
 
-Currently, two official plugins are available:
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+> **Interface web moderna para visualização de indicadores de saúde pública, monitoramento de capacidade hospitalar e gestão de dados do SUS.**
 
-## Expanding the ESLint configuration
+Este projeto é a interface cliente que consome a API do [Observatório Saúde Backend](https://github.com/eDusVx/observatorio-saude).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📸 Visão Geral do Projeto
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+A aplicação foi desenvolvida com foco em UX/UI limpa, responsividade e performance, oferecendo ferramentas analíticas para gestores e cidadãos.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 1. Dashboard Executivo & Chatbot
+Painel com os principais KPIs do Brasil, incluindo mapas de calor para cobertura de leitos e um **Assistente Virtual** integrado para responder dúvidas em linguagem natural.
+<br>
+<div align="center">
+  <img src="./assets/dashboard.jpg" alt="Visão Geral e Chatbot" width="100%">
+</div>
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Rede de Estabelecimentos
+Análise detalhada da infraestrutura física. Inclui rankings estaduais, relação habitantes/estabelecimento e filtros geográficos avançados.
+<br>
+<div align="center">
+  <img src="./assets/estabelecimentos.jpg" alt="Estabelecimentos de Saúde" width="100%">
+</div>
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 3. Capacidade Hospitalar (Leitos)
+Monitoramento profundo da ocupação. Gráficos comparativos (SUS vs. Privado), Top 10 estados e busca detalhada por hospitais específicos.
+<br>
+<div align="center">
+  <img src="./assets/hospitais-leitos.jpg" alt="Hospitais e Leitos" width="100%">
+</div>
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 4. Análises Históricas e Tendências
+Ferramentas de Business Intelligence (BI) para estudo de séries temporais (2021-2024), permitindo identificar a evolução ou retração da rede de saúde.
+<br>
+<div align="center">
+  <img src="./assets/analises.jpg" alt="Análises e Tendências" width="100%">
+</div>
+
+### 5. Transparência Institucional
+Página dedicada à transparência, listando as fontes de dados oficiais (CNES, OpenDataSUS) e a equipe responsável pelo desenvolvimento.
+<br>
+<div align="center">
+  <img src="./assets/sobre.jpg" alt="Sobre o Projeto" width="100%">
+</div>
+
+---
+
+## 🚀 Tecnologias
+
+O projeto utiliza uma stack moderna focada em **Performance** e **Tipagem Estática**:
+
+| Tecnologia | Função |
+| :--- | :--- |
+| **[React](https://react.dev/)** | Biblioteca principal de UI baseada em componentes. |
+| **[TypeScript](https://www.typescriptlang.org/)** | Superset JS para garantir segurança de tipos e manutenibilidade. |
+| **[Vite](https://vitejs.dev/)** | Build tool de próxima geração para desenvolvimento ultra-rápido. |
+| **[Tailwind CSS](https://tailwindcss.com/)** | Framework utility-first para estilização ágil e responsiva. |
+| **[ESLint](https://eslint.org/)** | Linter para padronização e qualidade de código. |
+
+---
+
+## ⚙️ Instalação e Execução
+
+Siga os passos abaixo para rodar o projeto localmente.
+
+### Pré-requisitos
+* **Node.js** (v16.x ou superior)
+* Gerenciador de pacotes (**npm** ou **yarn**)
+
+### Passo a Passo
+
+1. **Clone o repositório**
+   ```bash
+   git clone [https://github.com/brunoisaacshtavares/observatorio-saude-front.git](https://github.com/brunoisaacshtavares/observatorio-saude-front.git)
+   cd observatorio-saude-front
+
+2.  **Instale as dependências**
+
+    ```bash
+    npm install
+    # ou
+    yarn install
+    ```
+
+3.  **Configure as Variáveis de Ambiente**
+    Crie um arquivo `.env` na raiz do projeto e aponte para a API (Backend):
+
+    ```env
+    VITE_API_URL=http://localhost:5000/api/v1
+    ```
+
+4.  **Execute o servidor de desenvolvimento**
+
+    ```bash
+    npm run dev
+    ```
+
+    📍 Acesse a aplicação em: `http://localhost:5173`
+
+-----
