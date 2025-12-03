@@ -21,7 +21,7 @@ A aplicação foi desenvolvida com foco em UX/UI limpa, responsividade e perform
 Painel com os principais KPIs do Brasil, incluindo mapas de calor para cobertura de leitos e um **Assistente Virtual** integrado para responder dúvidas em linguagem natural.
 <br>
 <div align="center">
-  <img src="./assets/dashboard.png alt="Visão Geral e Chatbot" width="100%">
+  <img src="./assets/dashboard.png" alt="Visão Geral e Chatbot" width="100%">
 </div>
 
 ### 2. Rede de Estabelecimentos
